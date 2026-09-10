@@ -1,0 +1,170 @@
+# ============================================
+# Go (price-feed-simulator & feed-handler)
+# ============================================
+
+# Binaries
+/aggregator
+/simulator
+/price-feed-simulator/simulator
+/feed-handler/aggregator
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Output of go build
+/cmd/aggregator/aggregator
+/cmd/simulator/simulator
+price-feed-simulator/bin/
+feed-handler/bin/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Test coverage
+*.out
+coverage.html
+
+# Registry persistence data
+data/
+*.gob
+
+# ============================================
+# Python (rrcf-detector)
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytestdebug.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.env.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================
+# IDE & Editor specific
+# ============================================
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+.skills/
+
+# ============================================
+# OS specific
+# ============================================
+
+.DS_Store
+Thumbs.db
+*.DS_Store
+
+# ============================================
+# Logs
+# ============================================
+
+*.log
+logs/
+*.log.*
+
+# ============================================
+# Pipeline artifacts
+# ============================================
+
+# PID files for process management
+.pids/
+*.pid
+
+# Data files
+data/
+rrcf-detector/data/
+price-feed-simulator/data/*.csv
+feed-handler/data/
+
+# Docker volumes (handled by docker-compose)
+# Note: Volume data persisted by Docker
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Profiling
+*.prof
+cpu.prof
+mem.prof
+
+# ============================================
+# Project specific
+# ============================================
+
+# Config overrides (keep examples)
+config/local.yaml
+config/override.yaml
+*.local.yaml
+
+# Documentation build artifacts
+docs/_build/
+site/

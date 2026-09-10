@@ -1,0 +1,9 @@
+[submodule "price-feed-simulator"]
+	path = price-feed-simulator
+	url = https://github.com/Mario-Albornoz/DEBS-2022-Grand-Challenge-Data-Set-Price-Feed-Simulator.git
+[submodule "rrcf-detector"]
+	path = rrcf-detector
+	url = https://github.com/Mario-Albornoz/rrcf-detector.git
+[submodule "feed-handler"]
+	path = feed-handler
+	url = https://github.com/Mario-Albornoz/Feed-handler.git
