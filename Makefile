@@ -76,20 +76,28 @@ build-handler: ## Build feed-handler binary
 
 setup-detector: ## Setup rrcf-detector (Python venv + dependencies)
 	@echo "$(YELLOW)Setting up rrcf-detector...$(NC)"
+	@if ! command -v python3.12 > /dev/null 2>&1; then \
+		echo "$(RED)Error: Python 3.12 required but not found$(NC)"; \
+		echo "$(YELLOW)Install: brew install python@3.12$(NC)"; \
+		exit 1; \
+	fi
 	@cd $(DETECTOR_DIR) && \
 		if [ ! -d "venv" ]; then \
-			python3 -m venv venv; \
+			echo "$(YELLOW)  Creating venv with Python 3.12...$(NC)"; \
+			python3.12 -m venv venv; \
 			echo "$(GREEN)✓ Virtual environment created$(NC)"; \
 		fi && \
 		. venv/bin/activate && \
+		echo "$(YELLOW)  Installing dependencies from requirements.txt...$(NC)" && \
 		pip install --upgrade pip > /dev/null 2>&1 && \
-		pip install -r requirements.txt > /dev/null 2>&1 && \
+		pip install 'setuptools<75' > /dev/null 2>&1 && \
+		pip install -r requirements.txt && \
 		echo "$(GREEN)✓ Dependencies installed$(NC)"
 
 ##@ Infrastructure
 
-kafka-up: ## Start Kafka, Zookeeper, and Redis via Docker Compose
-	@echo "$(YELLOW)Starting infrastructure (Kafka + Zookeeper + Redis)...$(NC)"
+kafka-up: ## Start Kafka and Zookeeper via Docker Compose
+	@echo "$(YELLOW)Starting infrastructure (Kafka + Zookeeper)...$(NC)"
 	@docker compose up -d
 	@echo "$(YELLOW)Waiting for services to be healthy...$(NC)"
 	@sleep 15
@@ -229,5 +237,5 @@ clean: ## Clean build artifacts and logs
 clean-all: clean kafka-down ## Full cleanup (artifacts + Docker volumes + venv)
 	@echo "$(YELLOW)Performing full cleanup...$(NC)"
 	@rm -rf $(DETECTOR_DIR)/venv
-	@docker volume rm thesis-kafka-data thesis-redis-data 2>/dev/null || true
+	@docker volume rm thesis-kafka-data 2>/dev/null || true
 	@echo "$(GREEN)✓ Full cleanup complete$(NC)"

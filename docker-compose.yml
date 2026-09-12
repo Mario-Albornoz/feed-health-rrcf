@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -53,22 +51,6 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
-  redis:
-    image: redis:7.2-alpine
-    container_name: thesis-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - thesis-net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-
   # Optional: Topic initialization service (pre-creates topics)
   kafka-setup:
     image: confluentinc/cp-kafka:7.5.0
@@ -100,5 +82,3 @@ networks:
 volumes:
   kafka-data:
     name: thesis-kafka-data
-  redis-data:
-    name: thesis-redis-data

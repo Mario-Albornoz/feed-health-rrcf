@@ -26,7 +26,7 @@ This pipeline consists of three main components:
          └───────────────────────────┴─────────────────────────┘
                                      │
                           ┌──────────┴──────────┐
-                          │  Kafka + Redis       │
+                          │  Kafka               │
                           │  (Docker)            │
                           └─────────────────────┘
 ```
@@ -34,8 +34,8 @@ This pipeline consists of three main components:
 ## Prerequisites
 
 - **Go** 1.22+ (for simulator and feed-handler)
-- **Python** 3.8+ (for rrcf-detector)
-- **Docker** and **Docker Compose** (for Kafka and Redis)
+- **Python** 3.12 (for rrcf-detector - tested on 3.12.4)
+- **Docker** and **Docker Compose** (for Kafka)
 - **Make** (build automation)
 
 ## Quick Start
@@ -55,7 +55,7 @@ This will:
 
 ### 2. Start Infrastructure
 
-Start Kafka, Zookeeper, and Redis:
+Start Kafka and Zookeeper:
 
 ```bash
 make kafka-up
@@ -101,8 +101,8 @@ make kafka-down
 ### Infrastructure Management
 
 ```bash
-make kafka-up          # Start Kafka + Redis
-make kafka-down        # Stop Kafka + Redis (removes volumes)
+make kafka-up          # Start Kafka + Zookeeper
+make kafka-down        # Stop Kafka + Zookeeper (removes volumes)
 make kafka-logs        # View Kafka logs
 make kafka-status      # Check service status
 ```
@@ -244,7 +244,7 @@ make kafka-status
 # View Kafka logs
 make kafka-logs
 
-# Restart infrastructure
+# Restart Kafka
 make kafka-down
 make kafka-up
 ```
