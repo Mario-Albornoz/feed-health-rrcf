@@ -1,3 +1,4 @@
+# TODO: add last step for the rrcf setup.
 .PHONY: help setup clean kafka-up kafka-down kafka-logs kafka-status \
         build-simulator build-handler setup-detector \
         run-handler run-detector run-simulator \
@@ -26,7 +27,6 @@ HANDLER_BIN := $(HANDLER_DIR)/aggregator
 # PID files for process management
 PIDS_DIR := .pids
 HANDLER_PID := $(PIDS_DIR)/handler.pid
-DETECTOR_PID := $(PIDS_DIR)/detector.pid
 SIMULATOR_PID := $(PIDS_DIR)/simulator.pid
 
 # Log directory
@@ -118,7 +118,7 @@ kafka-status: ## Check Kafka infrastructure status
 
 ##@ Pipeline Execution
 
-run-all: ## Run the complete pipeline (handler → detector → simulator)
+run-all: ## Run the complete pipeline (handler → detector → simulator) with sleep prevention
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(BLUE)  Starting Thesis Pipeline$(NC)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
@@ -127,6 +127,8 @@ run-all: ## Run the complete pipeline (handler → detector → simulator)
 		echo "$(RED)✗ Kafka is not running. Please run 'make kafka-up' first.$(NC)"; \
 		exit 1; \
 	fi
+	@echo "$(YELLOW)ℹ Using caffeinate to prevent system sleep during execution$(NC)"
+	@echo ""
 	@echo "$(YELLOW)Step 1/3: Starting feed-handler...$(NC)"
 	@$(MAKE) run-handler
 	@sleep 5
@@ -134,16 +136,19 @@ run-all: ## Run the complete pipeline (handler → detector → simulator)
 	@$(MAKE) run-detector
 	@sleep 5
 	@echo "$(YELLOW)Step 3/3: Starting price-feed-simulator...$(NC)"
+	@echo "$(YELLOW)Step 4/4: Starting pipeline monitor...$(NC)"
+	@./scripts/monitor_pipeline.sh &
 	@echo "$(GREEN)Pipeline is now running!$(NC)"
 	@echo ""
 	@echo "$(BLUE)Logs:$(NC)"
 	@echo "  Handler:   tail -f $(LOGS_DIR)/handler.log"
-	@echo "  Detector:  tail -f $(LOGS_DIR)/detector.log"
+	@echo "  Detector:  tail -f $(LOGS_DIR)/detector-*.log"
+	@echo "  Monitor:   tail -f $(LOGS_DIR)/monitor.log"
 	@echo "  Simulator: (running in foreground)"
 	@echo ""
 	@echo "$(YELLOW)Press Ctrl+C to stop the simulator and pipeline$(NC)"
 	@echo ""
-	@$(MAKE) run-simulator
+	@caffeinate -dis $(MAKE) run-simulator
 
 run-handler: ## Start feed-handler (background)
 	@if [ -f $(HANDLER_PID) ] && kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null; then \
@@ -155,12 +160,15 @@ run-handler: ## Start feed-handler (background)
 	fi
 
 run-detector: ## Start rrcf-detector (background)
-	@if [ -f $(DETECTOR_PID) ] && kill -0 $$(cat $(DETECTOR_PID)) 2>/dev/null; then \
-		echo "$(YELLOW)Detector already running (PID: $$(cat $(DETECTOR_PID)))$(NC)"; \
+	@if [ -f $(PIDS_DIR)/detector-collector.pid ] && kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+		echo "$(YELLOW)Detector already running$(NC)"; \
 	else \
 		cd $(DETECTOR_DIR) && \
-			nohup venv/bin/python main.py > ../$(LOGS_DIR)/detector.log 2>&1 & echo $$! > ../$(DETECTOR_PID); \
-		echo "$(GREEN)✓ Detector started (PID: $$(cat $(DETECTOR_PID)))$(NC)"; \
+			PYTHONPATH=. nohup venv/bin/python3 scripts/stream_collector.py --config config/baselines.yaml > ../$(LOGS_DIR)/detector-collector.log 2>&1 & echo $$! > ../$(PIDS_DIR)/detector-collector.pid; \
+		sleep 2; \
+		cd $(DETECTOR_DIR) && \
+			PYTHONPATH=. nohup venv/bin/python3 scripts/run_multi_model.py --config config/baselines.yaml > ../$(LOGS_DIR)/detector-multi.log 2>&1 & echo $$! > ../$(PIDS_DIR)/detector-multi.pid; \
+		echo "$(GREEN)✓ Detector started (collector: $$(cat $(PIDS_DIR)/detector-collector.pid), multi-model: $$(cat $(PIDS_DIR)/detector-multi.pid))$(NC)"; \
 	fi
 
 run-simulator: ## Start price-feed-simulator (foreground)
@@ -172,9 +180,13 @@ stop-all: ## Stop all running pipeline components
 		kill $$(cat $(SIMULATOR_PID)) 2>/dev/null || true; \
 		rm -f $(SIMULATOR_PID); \
 	fi
-	@if [ -f $(DETECTOR_PID) ]; then \
-		kill $$(cat $(DETECTOR_PID)) 2>/dev/null || true; \
-		rm -f $(DETECTOR_PID); \
+	@if [ -f $(PIDS_DIR)/detector-collector.pid ]; then \
+		kill $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
+		rm -f $(PIDS_DIR)/detector-collector.pid; \
+	fi
+	@if [ -f $(PIDS_DIR)/detector-multi.pid ]; then \
+		kill $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
+		rm -f $(PIDS_DIR)/detector-multi.pid; \
 		echo "$(GREEN)✓ Detector stopped$(NC)"; \
 	fi
 	@if [ -f $(HANDLER_PID) ]; then \
@@ -195,10 +207,15 @@ status: ## Show status of all pipeline components
 	fi
 	@echo ""
 	@echo "$(YELLOW)RRCF Detector:$(NC)"
-	@if [ -f $(DETECTOR_PID) ] && kill -0 $$(cat $(DETECTOR_PID)) 2>/dev/null; then \
-		echo "  $(GREEN)● Running$(NC) (PID: $$(cat $(DETECTOR_PID)))"; \
+	@if [ -f $(PIDS_DIR)/detector-collector.pid ] && kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+		echo "  $(GREEN)● Collector Running$(NC) (PID: $$(cat $(PIDS_DIR)/detector-collector.pid))"; \
 	else \
-		echo "  $(RED)○ Stopped$(NC)"; \
+		echo "  $(RED)○ Collector Stopped$(NC)"; \
+	fi
+	@if [ -f $(PIDS_DIR)/detector-multi.pid ] && kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null; then \
+		echo "  $(GREEN)● Multi-Model Running$(NC) (PID: $$(cat $(PIDS_DIR)/detector-multi.pid))"; \
+	else \
+		echo "  $(RED)○ Multi-Model Stopped$(NC)"; \
 	fi
 	@echo ""
 	@echo "$(YELLOW)Infrastructure:$(NC)"
