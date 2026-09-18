@@ -1,0 +1,28 @@
+Kafka running|PASS|
+Handler binary exists|PASS|
+Simulator binary exists|PASS|
+Detector venv exists|PASS|
+Data files present|PASS|       7 CSV files found
+Clean state|PASS|All processes stopped
+Handler startup|PASS|PID: 42594
+Handler logs healthy|PASS|No errors in logs
+Detector collector startup|PASS|PID: 42629
+Detector multi-model startup|PASS|PID: 42632
+Detector collector logs exist|PASS|
+Simulator startup|PASS|PID: 42686
+Simulator logs exist|PASS|
+Simulator producing data|PASS|Throughput stats found
+Handler stability|PASS|Running after 30s
+Simulator stability|PASS|Running after 30s
+Detector stability|PASS|Running after 30s
+Log file handler.log|PASS|   20548 bytes
+Log file simulator.log|PASS|   13844 bytes
+Log file detector-collector.log|WARN|Only        0 bytes
+Log file detector-multi.log|WARN|Only        0 bytes
+Stop all components|PASS|All 4 components stopped
+Errors in detector-collector.log|WARN|0
+0 error(s) found
+Errors in detector-multi.log|WARN|0
+0 error(s) found
+Errors in handler.log|WARN|3 error(s) found
+Errors in simulator.log|WARN|56 error(s) found
