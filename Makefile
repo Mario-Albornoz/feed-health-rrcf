@@ -3,7 +3,7 @@
         build-simulator build-handler setup-detector \
         run-handler run-detector run-simulator run-simulator-foreground \
         run-all stop-all status logs \
-        test test-integration clean-all
+        test test-integration test-thesis test-simulator-completion clean-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -198,43 +198,62 @@ run-simulator-foreground: ## Start price-feed-simulator (foreground, no logging 
 stop-all: ## Stop all running pipeline components
 	@echo "$(YELLOW)Stopping pipeline components...$(NC)"
 	@echo ""
+	@# Kill simulator
 	@if [ -f $(SIMULATOR_PID) ]; then \
 		if kill -0 $$(cat $(SIMULATOR_PID)) 2>/dev/null; then \
 			kill $$(cat $(SIMULATOR_PID)) 2>/dev/null || true; \
+			sleep 0.5; \
+			kill -9 $$(cat $(SIMULATOR_PID)) 2>/dev/null || true; \
 			echo "$(GREEN)✓ Simulator stopped$(NC)"; \
 		fi; \
 		rm -f $(SIMULATOR_PID); \
 	else \
 		echo "$(YELLOW)  Simulator not running$(NC)"; \
 	fi
+	@# Kill detector collector and all its children
 	@if [ -f $(PIDS_DIR)/detector-collector.pid ]; then \
 		if kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+			pkill -P $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
 			kill $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
+			sleep 0.5; \
+			kill -9 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
 			echo "$(GREEN)✓ Detector collector stopped$(NC)"; \
 		fi; \
 		rm -f $(PIDS_DIR)/detector-collector.pid; \
 	else \
 		echo "$(YELLOW)  Detector collector not running$(NC)"; \
 	fi
+	@# Kill detector multi-model and ALL its worker children
 	@if [ -f $(PIDS_DIR)/detector-multi.pid ]; then \
 		if kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null; then \
+			pkill -P $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
 			kill $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
+			sleep 1; \
+			kill -9 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
+			pkill -9 -f "multiprocessing.*spawn_main" 2>/dev/null || true; \
 			echo "$(GREEN)✓ Detector multi-model stopped$(NC)"; \
 		fi; \
 		rm -f $(PIDS_DIR)/detector-multi.pid; \
 	else \
 		echo "$(YELLOW)  Detector multi-model not running$(NC)"; \
 	fi
+	@# Kill handler
 	@if [ -f $(HANDLER_PID) ]; then \
 		if kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null; then \
 			kill $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
+			sleep 0.5; \
+			kill -9 $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
 			echo "$(GREEN)✓ Handler stopped$(NC)"; \
 		fi; \
 		rm -f $(HANDLER_PID); \
 	else \
 		echo "$(YELLOW)  Handler not running$(NC)"; \
 	fi
+	@# Kill monitor
 	@pkill -f "monitor_pipeline.sh" 2>/dev/null || true
+	@# Nuclear option: kill any remaining Python workers from this project
+	@pkill -f "scripts/run_multi_model.py" 2>/dev/null || true
+	@pkill -f "scripts/stream_collector.py" 2>/dev/null || true
 	@echo ""
 	@echo "$(GREEN)✓ All components stopped$(NC)"
 
@@ -288,6 +307,14 @@ test-integration: ## Run integration test of complete pipeline (30s test)
 	@rm -f ./test-run/*.log
 	@./test-run/test_pipeline.sh
 
+test-thesis: ## Run thesis evaluation integration test
+	@echo "$(BLUE)Running thesis evaluation integration test...$(NC)"
+	@./test-run/test_thesis_quick.sh
+
+test-simulator-completion: ## Test that simulator completes gracefully (doesn't hang)
+	@echo "$(BLUE)Testing simulator completion and graceful shutdown...$(NC)"
+	@./test-run/test_simulator_completion.sh
+
 ##@ Cleanup
 
 clean: ## Clean build artifacts and logs
@@ -298,8 +325,87 @@ clean: ## Clean build artifacts and logs
 	@rm -rf $(PIDS_DIR)
 	@echo "$(GREEN)✓ Build artifacts cleaned$(NC)"
 
-clean-all: clean kafka-down ## Full cleanup (artifacts + Docker volumes + venv)
+clean-output-files: ## Clean output files from previous runs (scores, ground truth, logs)
+	@echo "$(YELLOW)Cleaning output files from previous runs...$(NC)"
+	@rm -f ./rrcf-detector/data/scores.parquet
+	@rm -f ./price-feed-simulator/anomaly_log.csv
+	@rm -f ./price-feed-simulator/data/anomaly_log.csv
+	@rm -f ./price-feed-simulator/data/injection_manifest.json
+	@rm -f ./data/scores.parquet
+	@rm -f ./data/anomaly_log.csv
+	@rm -f ./data/injection_manifest.json
+	@rm -f ./logs/*.log
+	@echo "$(GREEN)✓ Output files cleaned$(NC)"
+
+clean-all: clean clean-output-files kafka-down ## Full cleanup (artifacts + outputs + Docker volumes + venv)
 	@echo "$(YELLOW)Performing full cleanup...$(NC)"
 	@rm -rf $(DETECTOR_DIR)/venv
 	@docker volume rm thesis-kafka-data 2>/dev/null || true
 	@echo "$(GREEN)✓ Full cleanup complete$(NC)"
+
+##@ Thesis Evaluation
+
+run-thesis-experiment: ## Run thesis evaluation experiment with anomaly injection
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo "$(BLUE)  Thesis Evaluation Experiment$(NC)"
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Cleaning previous run...$(NC)"
+	@$(MAKE) clean-output-files > /dev/null 2>&1
+	@echo "$(GREEN)✓ Cleaned$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Starting infrastructure...$(NC)"
+	@make kafka-up > /dev/null 2>&1
+	@echo "$(GREEN)✓ Kafka ready$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Starting handler and detector...$(NC)"
+	@$(MAKE) run-handler > /dev/null 2>&1
+	@sleep 5
+	@$(MAKE) run-detector > /dev/null 2>&1
+	@sleep 5
+	@echo "$(GREEN)✓ Handler and detector ready$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Running simulator with anomaly injection...$(NC)"
+	@echo "  This will take 4-5 minutes depending on dataset size"
+	@echo "  $(BLUE)Progress: tail -f logs/simulator.log$(NC)"
+	@echo ""
+	@cd $(SIMULATOR_DIR) && ./bin/simulator -config config/simulator-with-anomalies.yaml
+	@echo ""
+	@echo "$(GREEN)✓ Simulator run complete$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Stopping pipeline components...$(NC)"
+	@$(MAKE) stop-all > /dev/null 2>&1
+	@echo "$(GREEN)✓ Components stopped$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Verifying output files...$(NC)"
+	@ls -lh ./price-feed-simulator/anomaly_log.csv ./price-feed-simulator/data/injection_manifest.json ./rrcf-detector/data/scores.parquet 2>&1 || echo "$(RED)✗ Missing output files$(NC)"
+	@echo ""
+	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo "$(GREEN)  Experiment Complete!$(NC)"
+	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo ""
+	@echo "Ground truth: ./price-feed-simulator/anomaly_log.csv"
+	@echo "Manifest:     ./price-feed-simulator/data/injection_manifest.json"
+	@echo "Scores:       ./rrcf-detector/data/scores.parquet"
+	@echo ""
+
+evaluate-thesis: ## Evaluate thesis results (RQ1 + RQ2)
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo "$(BLUE)  Thesis Evaluation: RQ1 + RQ2 (Optimized)$(NC)"
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo ""
+	@cd $(DETECTOR_DIR) && \
+		./venv/bin/python3 scripts/evaluate_thesis.py \
+		--ground-truth-csv ../price-feed-simulator/anomaly_log.csv \
+		--ground-truth-manifest ../price-feed-simulator/data/injection_manifest.json \
+		--scores ./data/scores_rrcf.parquet \
+		--output ../results/thesis_$(shell date +%Y%m%d_%H%M%S)
+	@echo ""
+	@echo "$(GREEN)✓ Evaluation complete!$(NC)"
+	@echo "Results are ready for thesis inclusion."
+
+thesis-full: run-thesis-experiment evaluate-thesis ## Complete thesis evaluation workflow (run + evaluate)
+	@echo ""
+	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo "$(GREEN)  Thesis Evaluation Complete!$(NC)"
+	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"

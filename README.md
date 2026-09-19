@@ -227,6 +227,7 @@ python scripts/test_integration.py
 ### Cleanup
 
 ```bash
+make clean-output-files # Remove output files from previous runs (scores, ground truth, logs)
 make clean             # Remove build artifacts and logs
 make clean-all         # Full cleanup (includes Docker volumes and venv)
 ```
@@ -528,3 +529,339 @@ For issues or questions:
 2. Review logs with `make logs`
 3. Check Kafka status with `make kafka-status`
 4. Ensure all prerequisites are installed
+
+---
+
+## Thesis Evaluation
+
+### Overview
+
+The thesis evaluation system answers two research questions:
+- **RQ1**: Can two-timescale RRCF detect all four phases of feed degradation?
+- **RQ2**: Does RRCF outperform baseline methods (Z-Score, Isolation Forest, Half-Space Trees, Online-iForest)?
+
+The system automatically:
+1. Injects synthetic anomalies into real DEBS 2022 data
+2. Runs all 5 detection models on the same data stream
+3. Generates ground truth logs
+4. Evaluates detection performance with phase-specific metrics
+5. Produces LaTeX tables and publication-quality plots
+
+### Quick Start (Complete Workflow)
+
+Run the entire thesis evaluation in one command:
+
+```bash
+make thesis-full
+```
+
+**Duration**: Depends on dataset size and configuration (typically 10-30 minutes)
+
+**Note**: First run will pause ~10 minutes while Python loads libraries (subsequent runs are faster)
+
+### Step-by-Step Workflow
+
+If you prefer to run each step separately:
+
+#### Step 1: Run Experiment with Anomaly Injection
+
+```bash
+make run-thesis-experiment
+```
+
+This will:
+- Clean previous run data
+- Start Kafka infrastructure
+- Run simulator with synthetic anomaly injection (4 phases)
+- Collect model predictions from all 5 models
+- Generate ground truth logs
+
+**Output Files:**
+- `price-feed-simulator/anomaly_log.csv` - Detailed injection log
+- `price-feed-simulator/injection_manifest.json` - Experiment metadata
+- `data/scores.parquet` - All model predictions (unified file)
+
+#### Step 2: Evaluate Results
+
+```bash
+make evaluate-thesis
+```
+
+This will:
+- Load ground truth and model predictions
+- Compute RQ1 metrics (per-phase detection by RRCF)
+- Compute RQ2 metrics (comparative performance across models)
+- Generate LaTeX tables ready for thesis
+- Create publication-quality plots
+
+**Output Files:** `results/thesis_YYYYMMDD_HHMMSS/`
+- `rq1_results.json` - Phase detection performance
+- `rq2_results.json` - Model comparison metrics
+- `tables/table_rq1_phase_detection.tex` - LaTeX table for RQ1
+- `tables/table_rq2_model_comparison.tex` - LaTeX table for RQ2
+- `figures/fig_rq1_heatmap.pdf` - Phase performance heatmap
+- `figures/fig_rq2_model_comparison.pdf` - Model comparison bar chart
+
+### Understanding the Four Phases
+
+The system evaluates detection across four phases of feed degradation:
+
+1. **Phase 1: Gradual Tick Rate Decline** (Day 08-11-2021, 09:30-14:00)
+   - Collective anomaly: systematic decrease in tick rate
+   - Detection window: 2 minutes (trend confirmation needed)
+
+2. **Phase 2: Contextual Price Anomalies** (Day 09-11-2021, 09:30-15:00)
+   - Individual prices out of context (spikes, stale prices)
+   - Detection window: 30 seconds (context history needed)
+
+3. **Phase 3: Feed Silence** (Day 08-11-2021, 14:30-16:00)
+   - Complete lack of updates for instruments
+   - Detection window: 10 seconds (immediately observable)
+
+4. **Phase 4: Sudden Point Failures** (Day 10-11-2021, 09:30-15:30)
+   - Abrupt failures (malformed messages, implausible prices)
+   - Detection window: 5 seconds (instant detection)
+
+### Configuration
+
+#### Anomaly Injection Settings
+
+Edit `price-feed-simulator/config/simulator-with-anomalies.yaml`:
+
+```yaml
+anomaly:
+  enabled: true
+  seed: 42  # For reproducibility
+  
+  phase1_tick_rate_decline:
+    enabled: true
+    date_filter: ["08-11-2021"]
+    window: {start: "09:30:00", end: "14:00:00"}
+    initial_rate: 1.0  # 100%
+    final_rate: 0.3    # 30%
+    instrument_ratio: 0.4  # 40% of instruments affected
+```
+
+#### Detection Settings
+
+Edit `rrcf-detector/config/baselines.yaml`:
+
+```yaml
+models:
+  - rrcf
+  - zscore
+  - isoforest
+  - halfspace
+  - onlineiforest
+
+detector:
+  window_size: 1000
+  min_fill_threshold: 50
+```
+
+#### Evaluation Thresholds
+
+Edit `rrcf-detector/scripts/evaluate_thesis.py`:
+
+```python
+# Phase-specific detection windows (milliseconds)
+DETECTION_WINDOWS = {
+    1: 120_000,  # Phase 1: 2 minutes
+    2: 30_000,   # Phase 2: 30 seconds
+    3: 10_000,   # Phase 3: 10 seconds
+    4: 5_000,    # Phase 4: 5 seconds
+}
+
+# Alert threshold (Z-score)
+alert_threshold = 2.0  # Default: 2 standard deviations
+```
+
+### Advanced Usage
+
+#### Run Experiment Only
+
+```bash
+make run-thesis-experiment
+```
+
+Generates ground truth and model predictions without evaluation.
+
+#### Evaluate Existing Data
+
+If you already have ground truth and scores:
+
+```bash
+cd rrcf-detector
+./venv/bin/python3 scripts/evaluate_thesis.py \
+    --ground-truth-csv ../price-feed-simulator/anomaly_log.csv \
+    --ground-truth-manifest ../price-feed-simulator/injection_manifest.json \
+    --scores ../data/scores.parquet \
+    --output ../results/custom_run
+```
+
+#### Custom Experiment Run
+
+```bash
+# 1. Clean previous data
+rm -f price-feed-simulator/anomaly_log.csv data/scores.parquet
+
+# 2. Start infrastructure
+make kafka-up
+
+# 3. Run with custom duration/config
+make run-handler
+cd rrcf-detector
+./venv/bin/python3 scripts/run_multi_model.py \
+    --config config/baselines.yaml \
+    --output ../data/scores.parquet &
+
+cd ../price-feed-simulator
+./bin/simulator -config config/simulator-with-anomalies.yaml
+
+# 4. Stop and evaluate
+make stop-all
+make evaluate-thesis
+```
+
+### Interpreting Results
+
+#### RQ1 Results (Phase Detection)
+
+Example `rq1_results.json`:
+```json
+{
+  "phase1": {
+    "precision": 0.92,
+    "recall": 0.88,
+    "f1": 0.90,
+    "avg_latency_ms": 45320,
+    "total_injections": 1234,
+    "total_detections": 1150
+  },
+  ...
+}
+```
+
+- **Precision**: What % of detections were correct?
+- **Recall**: What % of injections were detected?
+- **F1**: Harmonic mean (overall performance)
+- **Latency**: How fast did detection occur?
+
+#### RQ2 Results (Model Comparison)
+
+Example `rq2_results.json`:
+```json
+{
+  "rrcf": {
+    "overall": {
+      "f1": 0.90,
+      "precision": 0.92,
+      "recall": 0.88
+    },
+    "per_phase": {
+      "phase1": {"f1": 0.90},
+      "phase2": {"f1": 0.89},
+      ...
+    }
+  },
+  "zscore": {...},
+  ...
+}
+```
+
+Shows comparative performance across all models.
+
+### LaTeX Integration
+
+The generated tables are ready for direct inclusion in your thesis:
+
+```latex
+% In your thesis .tex file
+\input{results/thesis_20260918_235900/tables/table_rq1_phase_detection.tex}
+\input{results/thesis_20260918_235900/tables/table_rq2_model_comparison.tex}
+
+% Include figures
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{results/thesis_20260918_235900/figures/fig_rq1_heatmap.pdf}
+  \caption{Detection performance across four phases}
+  \label{fig:rq1-heatmap}
+\end{figure}
+```
+
+### Testing the Evaluation System
+
+Quick validation that everything works:
+
+```bash
+# Run integration test
+make test-thesis
+
+# Or manual test
+cd price-feed-simulator
+./bin/simulator -config config/simulator-with-anomalies.yaml &
+sleep 60 && pkill simulator
+
+# Check outputs
+ls -lh anomaly_log.csv injection_manifest.json
+```
+
+### Troubleshooting
+
+#### No Ground Truth Files Created
+
+**Issue**: `anomaly_log.csv` or `injection_manifest.json` not created
+
+**Solution**:
+- Files are created in simulator's working directory
+- Check `price-feed-simulator/anomaly_log.csv`
+- Manifest only created on clean shutdown (Ctrl+C)
+
+#### Python Import Takes Forever
+
+**Issue**: First detector startup pauses 10+ minutes
+
+**Solution**: 
+- This is normal for first import on some systems
+- Subsequent runs are much faster (imports cached)
+- Be patient on first run
+
+#### No Anomalies in Time Window
+
+**Issue**: Short runs may not reach injection windows
+
+**Solution**:
+- Phase 1 starts at 09:30:00 on day 08-11-2021
+- Run for at least 10-15 minutes to see injections
+- Check `injection_manifest.json` for statistics
+
+#### Evaluation Script Fails
+
+**Issue**: Missing columns or data mismatch
+
+**Solution**:
+```bash
+# Verify files exist and have data
+ls -lh price-feed-simulator/anomaly_log.csv
+wc -l price-feed-simulator/anomaly_log.csv
+
+ls -lh data/scores.parquet
+python3 -c "import pandas as pd; df = pd.read_parquet('data/scores.parquet'); print(len(df))"
+```
+
+### Performance Notes
+
+- **First run**: 10-15 minutes setup + experiment time
+- **Subsequent runs**: Much faster (Python imports cached)
+- **Dataset size**: Full DEBS 2022 dataset = ~30 minutes
+- **Simulator speed**: Configure in `simulator-with-anomalies.yaml`
+  - `mode: realtime` = matches original timing
+  - `mode: accelerated` + `acceleration_factor: 10` = 10x faster
+
+### Complete Documentation
+
+For detailed implementation and design decisions, see:
+- **`THESIS_EVALUATION.md`** - Complete evaluation system documentation
+- **`TEST_SUMMARY.md`** - Testing guide and validation
+- **`price-feed-simulator/ANOMALY_INJECTION.md`** - Injection details
+

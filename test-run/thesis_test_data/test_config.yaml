@@ -1,0 +1,35 @@
+detector:
+  window_size: 100
+  min_fill_threshold: 10
+  training_samples: 1000
+  n_estimators: 10
+  contamination: 0.1
+  n_trees: 5
+  height: 4
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  consumer_group_id: "test-detector"
+  input_topic: "normalized-vectors"
+  output_topic: "anomaly-scores"
+  auto_offset_reset: "latest"
+  linger_ms: 10
+  batch_size: 10000
+  compression_type: "lz4"
+  acks: 1
+  retries: 3
+
+multiprocessing:
+  num_workers: 2
+  health_check_interval: 30
+
+models:
+  - rrcf
+  - zscore
+
+stream_collector:
+  output_file: "$TEST_DATA_DIR/test_scores.parquet"
+  buffer_size: 100
+  flush_interval: 5
+  bootstrap_servers: "localhost:9092"
+  topic: "anomaly-scores"

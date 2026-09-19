@@ -1,11 +1,11 @@
 #!/bin/bash
-# Start simulator and save PID
+# Start simulator with anomaly injection and save PID
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT/price-feed-simulator"
 
-# Start the simulator in background
-nohup ./bin/simulator > "$PROJECT_ROOT/logs/simulator.log" 2>&1 &
+# Start the simulator in background with anomaly config
+nohup ./bin/simulator -config config/simulator-with-anomalies.yaml > "$PROJECT_ROOT/logs/simulator.log" 2>&1 &
 PID=$!
 
 # Save PID
