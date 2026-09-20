@@ -327,7 +327,11 @@ clean: ## Clean build artifacts and logs
 
 clean-output-files: ## Clean output files from previous runs (scores, ground truth, logs)
 	@echo "$(YELLOW)Cleaning output files from previous runs...$(NC)"
-	@rm -f ./rrcf-detector/data/scores.parquet
+	@rm -f ./rrcf-detector/data/scores_rrcf.parquet
+	@rm -f ./rrcf-detector/data/scores_zscore.parquet
+	@rm -f ./rrcf-detector/data/scores_onlineiforest.parquet
+	@rm -f ./rrcf-detector/data/scores_isoforest.parquet
+	@rm -f ./rrcf-detector/data/scores_halfspace.parquet
 	@rm -f ./price-feed-simulator/anomaly_log.csv
 	@rm -f ./price-feed-simulator/data/anomaly_log.csv
 	@rm -f ./price-feed-simulator/data/injection_manifest.json

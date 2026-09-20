@@ -23,13 +23,15 @@ cd "$PROJECT_ROOT/rrcf-detector"
 COLLECTOR_PID=0
 echo $COLLECTOR_PID > "$PROJECT_ROOT/.pids/detector-collector.pid"
 
-# Start multi-model (creates model-specific parquet files)
-PYTHONPATH=. nohup venv/bin/python3 scripts/run_multi_model.py --config config/baselines.yaml > "$PROJECT_ROOT/logs/detector-multi.log" 2>&1 &
+# Start multi-model via wrapper script
+nohup "$PROJECT_ROOT/scripts/run_detector_wrapper.sh" < /dev/null > "$PROJECT_ROOT/logs/detector-multi.log" 2>&1 &
 MULTI_PID=$!
+
+# Save PID
 echo $MULTI_PID > "$PROJECT_ROOT/.pids/detector-multi.pid"
 
 # Verify it started
-sleep 1
+sleep 2
 if kill -0 $MULTI_PID 2>/dev/null; then
     echo "$COLLECTOR_PID $MULTI_PID"
     exit 0
