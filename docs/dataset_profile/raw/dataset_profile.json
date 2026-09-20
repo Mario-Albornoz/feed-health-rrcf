@@ -1,0 +1,2506 @@
+{
+  "directory": "price-feed-simulator/data",
+  "days": [
+    {
+      "file": "debs2022-gc-trading-day-08-11-21.csv",
+      "seconds": 227.1,
+      "rows": 53994554,
+      "rows_equity": 44098800,
+      "rows_index": 9895754,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 1,
+      "dates_in_file": {
+        "08-11-2021": 44098800
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2991,
+      "by_exchange": {
+        "ETR": {
+          "rows": 4662025,
+          "trade": 1062331,
+          "bid_only": 1143814,
+          "ask_only": 1126929,
+          "bid_and_ask": 924379,
+          "other": 404572,
+          "trade_share_pct": 22.786900542146384,
+          "instruments": 1580
+        },
+        "FR": {
+          "rows": 25860880,
+          "trade": 602917,
+          "bid_only": 3812745,
+          "ask_only": 3866169,
+          "bid_and_ask": 75442,
+          "other": 17503607,
+          "trade_share_pct": 2.331386248263787,
+          "instruments": 1053
+        },
+        "NL": {
+          "rows": 13575895,
+          "trade": 318026,
+          "bid_only": 2058614,
+          "ask_only": 2012406,
+          "bid_and_ask": 26801,
+          "other": 9160048,
+          "trade_share_pct": 2.3425785187643244,
+          "instruments": 358
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.632790461418451,
+        "Last volume": 2.9792534037207363,
+        "Bid": 18.237999673460504,
+        "Ask": 18.216073906772973,
+        "Bid volume": 18.059666022658213,
+        "Ask volume": 18.030796756374322,
+        "Total volume": 5.0703896704672236,
+        "Trading time": 39.01932705651854,
+        "Trading date": 2.0905421462715537,
+        "ISIN": 0.01317949694776275
+      },
+      "trades": 1983274,
+      "trades_pct_of_equity_rows": 4.497342331310603,
+      "trades_without_last_volume_pct": 33.88543388356828,
+      "currency": {
+        "EUR": 5623,
+        "USD": 81,
+        "GBP": 59,
+        "SEK": 29,
+        "CHF": 23,
+        "JPY": 2,
+        "AUD": 1
+      },
+      "isin_present_rows": 5812,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.07472538935299827,
+        "trading_time_present_pct": 39.01932705651854,
+        "trading_time_exactly_midnight_rows": 2815,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 2354,
+          "other": 434,
+          "bid_only": 27
+        },
+        "event_time_midnight_rows": 8576,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "-1": 5760,
+          "17": 1187,
+          "0": 645,
+          "5": 556,
+          "2": 89,
+          "9": 71,
+          "1": 54,
+          "11": 44,
+          "10": 30,
+          "15": 29,
+          "16": 27,
+          "13": 27,
+          "14": 26,
+          "12": 23,
+          "18": 6,
+          "8": 1,
+          "6": 1
+        },
+        "system_time_hour_rows": {
+          "-1": 5760,
+          "0": 696,
+          "1": 1319,
+          "2": 1321,
+          "3": 27547,
+          "4": 2763,
+          "5": 4950,
+          "6": 11647,
+          "7": 63893,
+          "8": 77059,
+          "9": 6535590,
+          "10": 5573799,
+          "11": 4416780,
+          "12": 3712602,
+          "13": 3812942,
+          "14": 3749225,
+          "15": 6223015,
+          "16": 6292803,
+          "17": 3572935,
+          "18": 4546,
+          "19": 791,
+          "20": 5443,
+          "21": 812,
+          "22": 491,
+          "23": 71
+        },
+        "event_first_hhmm": "00:00:03",
+        "event_last_hhmm": "23:58:53"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 3248,
+            "trades": 0
+          },
+          "1": {
+            "rows": 1260,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1,
+            "trades": 0
+          },
+          "3": {
+            "rows": 1481,
+            "trades": 0
+          },
+          "4": {
+            "rows": 755,
+            "trades": 0
+          },
+          "5": {
+            "rows": 2468,
+            "trades": 0
+          },
+          "6": {
+            "rows": 5845,
+            "trades": 0
+          },
+          "7": {
+            "rows": 2742,
+            "trades": 0
+          },
+          "8": {
+            "rows": 11853,
+            "trades": 0
+          },
+          "9": {
+            "rows": 623640,
+            "trades": 156998
+          },
+          "10": {
+            "rows": 497767,
+            "trades": 128624
+          },
+          "11": {
+            "rows": 402755,
+            "trades": 115955
+          },
+          "12": {
+            "rows": 367735,
+            "trades": 109669
+          },
+          "13": {
+            "rows": 374325,
+            "trades": 108651
+          },
+          "14": {
+            "rows": 369161,
+            "trades": 105376
+          },
+          "15": {
+            "rows": 750370,
+            "trades": 123132
+          },
+          "16": {
+            "rows": 779365,
+            "trades": 121091
+          },
+          "17": {
+            "rows": 456079,
+            "trades": 89772
+          },
+          "18": {
+            "rows": 2424,
+            "trades": 720
+          },
+          "19": {
+            "rows": 774,
+            "trades": 720
+          },
+          "20": {
+            "rows": 5436,
+            "trades": 720
+          },
+          "21": {
+            "rows": 2001,
+            "trades": 720
+          },
+          "22": {
+            "rows": 470,
+            "trades": 183
+          },
+          "23": {
+            "rows": 70,
+            "trades": 0
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 4151,
+            "trades": 0
+          },
+          "1": {
+            "rows": 3,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1037,
+            "trades": 0
+          },
+          "3": {
+            "rows": 22002,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1673,
+            "trades": 0
+          },
+          "5": {
+            "rows": 1616,
+            "trades": 0
+          },
+          "6": {
+            "rows": 4869,
+            "trades": 0
+          },
+          "7": {
+            "rows": 51897,
+            "trades": 0
+          },
+          "8": {
+            "rows": 46986,
+            "trades": 0
+          },
+          "9": {
+            "rows": 4008113,
+            "trades": 119632
+          },
+          "10": {
+            "rows": 3401294,
+            "trades": 69065
+          },
+          "11": {
+            "rows": 2646228,
+            "trades": 55883
+          },
+          "12": {
+            "rows": 2195111,
+            "trades": 49155
+          },
+          "13": {
+            "rows": 2250172,
+            "trades": 46085
+          },
+          "14": {
+            "rows": 2178613,
+            "trades": 45508
+          },
+          "15": {
+            "rows": 3395191,
+            "trades": 68915
+          },
+          "16": {
+            "rows": 3555658,
+            "trades": 73924
+          },
+          "17": {
+            "rows": 2095219,
+            "trades": 74750
+          },
+          "18": {
+            "rows": 1009,
+            "trades": 0
+          },
+          "19": {
+            "rows": 17,
+            "trades": 0
+          },
+          "20": {
+            "rows": 7,
+            "trades": 0
+          },
+          "21": {
+            "rows": 0,
+            "trades": 0
+          },
+          "22": {
+            "rows": 13,
+            "trades": 0
+          },
+          "23": {
+            "rows": 1,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 1228,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 194,
+            "trades": 0
+          },
+          "3": {
+            "rows": 4064,
+            "trades": 0
+          },
+          "4": {
+            "rows": 335,
+            "trades": 0
+          },
+          "5": {
+            "rows": 310,
+            "trades": 0
+          },
+          "6": {
+            "rows": 932,
+            "trades": 0
+          },
+          "7": {
+            "rows": 8067,
+            "trades": 0
+          },
+          "8": {
+            "rows": 18305,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1903662,
+            "trades": 54169
+          },
+          "10": {
+            "rows": 1674687,
+            "trades": 35486
+          },
+          "11": {
+            "rows": 1367735,
+            "trades": 29661
+          },
+          "12": {
+            "rows": 1149720,
+            "trades": 26329
+          },
+          "13": {
+            "rows": 1188378,
+            "trades": 24127
+          },
+          "14": {
+            "rows": 1201401,
+            "trades": 25409
+          },
+          "15": {
+            "rows": 2077419,
+            "trades": 43037
+          },
+          "16": {
+            "rows": 1957625,
+            "trades": 41779
+          },
+          "17": {
+            "rows": 1021625,
+            "trades": 38029
+          },
+          "18": {
+            "rows": 198,
+            "trades": 0
+          },
+          "19": {
+            "rows": 0,
+            "trades": 0
+          },
+          "20": {
+            "rows": 0,
+            "trades": 0
+          },
+          "21": {
+            "rows": 0,
+            "trades": 0
+          },
+          "22": {
+            "rows": 8,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 33.13067777650815,
+        "per_instrument_backward_steps_pct": 28.88437538361072,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 752,
+          "[1,10)": 300571,
+          "[10,100)": 1281211,
+          "[100,500)": 5234436,
+          "[500,1000)": 5911139,
+          "[1000,5000)": 21,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 921,
+          "[3.6e+06,8.64e+07)": 7748,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 31359010,
+        "identical_timestamp_pct": 40.960103651231336,
+        "p50": 177.82794100389228,
+        "p90": 2238.72113856834,
+        "p99": 31622.776601683792,
+        "p99.9": 1258925.4117941686
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 3981.0717055349733,
+        "p90": 15848.93192461114,
+        "p99": 354813.389233576,
+        "p99.9": 3981071.7055349774
+      },
+      "trade_price": {
+        "min": 0.0005,
+        "max": 8729.3217,
+        "consecutive_trade_pairs": 1980913,
+        "same_price_as_previous_trade_pct": 51.46990301946628,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0035481338923357567,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.07943282347242822
+        },
+        "changes_over_10_pct": 164
+      },
+      "bid_ask_rows_with_both_sides": 1027566,
+      "crossed_quotes_on_those_rows": 51,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 26.0,
+        "q0.25": 80.0,
+        "q0.5": 1105.0,
+        "q0.75": 3227.5,
+        "q0.9": 19702.0,
+        "q0.99": 354442.39999999997,
+        "q1": 1459889.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 1.0,
+        "q0.5": 13.0,
+        "q0.75": 361.0,
+        "q0.9": 2103.0,
+        "q0.99": 9468.99999999995,
+        "q1": 28143.0
+      },
+      "instruments_without_any_trade": 630,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 818,
+        "100-999": 654,
+        "1k-9,999": 1108,
+        "10k-99,999": 321,
+        ">=100k": 90
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-09-11-21.csv",
+      "seconds": 253.1,
+      "rows": 58811870,
+      "rows_equity": 48893485,
+      "rows_index": 9918385,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 1,
+      "dates_in_file": {
+        "09-11-2021": 48893485
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2992,
+      "by_exchange": {
+        "ETR": {
+          "rows": 4914779,
+          "trade": 1093430,
+          "bid_only": 1204404,
+          "ask_only": 1191671,
+          "bid_and_ask": 998522,
+          "other": 426752,
+          "trade_share_pct": 22.2477958825819,
+          "instruments": 1581
+        },
+        "FR": {
+          "rows": 29077486,
+          "trade": 660726,
+          "bid_only": 4366777,
+          "ask_only": 4265682,
+          "bid_and_ask": 71793,
+          "other": 19712508,
+          "trade_share_pct": 2.2722941041051485,
+          "instruments": 1053
+        },
+        "NL": {
+          "rows": 14901220,
+          "trade": 333438,
+          "bid_only": 2237658,
+          "ask_only": 2214343,
+          "bid_and_ask": 26305,
+          "other": 10089476,
+          "trade_share_pct": 2.237655708727205,
+          "instruments": 358
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.39189393024449,
+        "Last volume": 2.900727980425204,
+        "Bid": 18.215882954549055,
+        "Ask": 17.935389551389108,
+        "Bid volume": 18.05756942872859,
+        "Ask volume": 17.779696006533385,
+        "Total volume": 4.936608629963685,
+        "Trading time": 38.53464525999732,
+        "Trading date": 2.0352813876940865,
+        "ISIN": 0.011962739002957143
+      },
+      "trades": 2087594,
+      "trades_pct_of_equity_rows": 4.269677238184188,
+      "trades_without_last_volume_pct": 32.18700571088056,
+      "currency": {
+        "EUR": 5660,
+        "USD": 81,
+        "GBP": 59,
+        "SEK": 29,
+        "CHF": 23,
+        "JPY": 2,
+        "AUD": 1
+      },
+      "isin_present_rows": 5849,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.07084174916146804,
+        "trading_time_present_pct": 38.53464525999732,
+        "trading_time_exactly_midnight_rows": 2815,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 2355,
+          "other": 433,
+          "bid_only": 27
+        },
+        "event_time_midnight_rows": 8615,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "-1": 5799,
+          "17": 1192,
+          "0": 643,
+          "5": 556,
+          "2": 88,
+          "9": 74,
+          "1": 55,
+          "11": 44,
+          "16": 31,
+          "10": 31,
+          "15": 30,
+          "13": 24,
+          "14": 21,
+          "12": 19,
+          "18": 6,
+          "8": 1,
+          "6": 1
+        },
+        "system_time_hour_rows": {
+          "-1": 5799,
+          "0": 701,
+          "1": 1358,
+          "2": 1332,
+          "3": 25245,
+          "4": 3047,
+          "5": 6484,
+          "6": 11383,
+          "7": 37824,
+          "8": 105706,
+          "9": 5810539,
+          "10": 5116088,
+          "11": 4947186,
+          "12": 4454756,
+          "13": 3924858,
+          "14": 4297566,
+          "15": 7003151,
+          "16": 9003277,
+          "17": 4124981,
+          "18": 4531,
+          "19": 831,
+          "20": 5413,
+          "21": 865,
+          "22": 478,
+          "23": 86
+        },
+        "event_first_hhmm": "00:01:19",
+        "event_last_hhmm": "23:59:22"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 4472,
+            "trades": 0
+          },
+          "1": {
+            "rows": 1299,
+            "trades": 0
+          },
+          "2": {
+            "rows": 13,
+            "trades": 0
+          },
+          "3": {
+            "rows": 1,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1725,
+            "trades": 0
+          },
+          "5": {
+            "rows": 4002,
+            "trades": 0
+          },
+          "6": {
+            "rows": 6350,
+            "trades": 0
+          },
+          "7": {
+            "rows": 2873,
+            "trades": 0
+          },
+          "8": {
+            "rows": 11834,
+            "trades": 0
+          },
+          "9": {
+            "rows": 548366,
+            "trades": 145913
+          },
+          "10": {
+            "rows": 459608,
+            "trades": 120565
+          },
+          "11": {
+            "rows": 451817,
+            "trades": 129456
+          },
+          "12": {
+            "rows": 408098,
+            "trades": 119659
+          },
+          "13": {
+            "rows": 380486,
+            "trades": 106206
+          },
+          "14": {
+            "rows": 397442,
+            "trades": 109624
+          },
+          "15": {
+            "rows": 775590,
+            "trades": 133036
+          },
+          "16": {
+            "rows": 945674,
+            "trades": 134361
+          },
+          "17": {
+            "rows": 505103,
+            "trades": 91546
+          },
+          "18": {
+            "rows": 2391,
+            "trades": 721
+          },
+          "19": {
+            "rows": 821,
+            "trades": 720
+          },
+          "20": {
+            "rows": 5412,
+            "trades": 720
+          },
+          "21": {
+            "rows": 859,
+            "trades": 720
+          },
+          "22": {
+            "rows": 458,
+            "trades": 183
+          },
+          "23": {
+            "rows": 85,
+            "trades": 0
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 4160,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1037,
+            "trades": 0
+          },
+          "3": {
+            "rows": 21293,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1113,
+            "trades": 0
+          },
+          "5": {
+            "rows": 1609,
+            "trades": 0
+          },
+          "6": {
+            "rows": 4235,
+            "trades": 0
+          },
+          "7": {
+            "rows": 28149,
+            "trades": 0
+          },
+          "8": {
+            "rows": 61033,
+            "trades": 0
+          },
+          "9": {
+            "rows": 3521950,
+            "trades": 99703
+          },
+          "10": {
+            "rows": 3181257,
+            "trades": 68687
+          },
+          "11": {
+            "rows": 3026862,
+            "trades": 69623
+          },
+          "12": {
+            "rows": 2685092,
+            "trades": 65448
+          },
+          "13": {
+            "rows": 2354618,
+            "trades": 45356
+          },
+          "14": {
+            "rows": 2590833,
+            "trades": 52909
+          },
+          "15": {
+            "rows": 3938962,
+            "trades": 82091
+          },
+          "16": {
+            "rows": 5197500,
+            "trades": 96235
+          },
+          "17": {
+            "rows": 2456726,
+            "trades": 80674
+          },
+          "18": {
+            "rows": 1025,
+            "trades": 0
+          },
+          "19": {
+            "rows": 10,
+            "trades": 0
+          },
+          "20": {
+            "rows": 1,
+            "trades": 0
+          },
+          "21": {
+            "rows": 6,
+            "trades": 0
+          },
+          "22": {
+            "rows": 12,
+            "trades": 0
+          },
+          "23": {
+            "rows": 1,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 1230,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 194,
+            "trades": 0
+          },
+          "3": {
+            "rows": 3951,
+            "trades": 0
+          },
+          "4": {
+            "rows": 209,
+            "trades": 0
+          },
+          "5": {
+            "rows": 317,
+            "trades": 0
+          },
+          "6": {
+            "rows": 797,
+            "trades": 0
+          },
+          "7": {
+            "rows": 5613,
+            "trades": 0
+          },
+          "8": {
+            "rows": 32869,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1740113,
+            "trades": 46735
+          },
+          "10": {
+            "rows": 1475183,
+            "trades": 30765
+          },
+          "11": {
+            "rows": 1468421,
+            "trades": 36549
+          },
+          "12": {
+            "rows": 1361535,
+            "trades": 35062
+          },
+          "13": {
+            "rows": 1189703,
+            "trades": 22531
+          },
+          "14": {
+            "rows": 1309237,
+            "trades": 25808
+          },
+          "15": {
+            "rows": 2288864,
+            "trades": 47876
+          },
+          "16": {
+            "rows": 2859615,
+            "trades": 51389
+          },
+          "17": {
+            "rows": 1163161,
+            "trades": 36723
+          },
+          "18": {
+            "rows": 198,
+            "trades": 0
+          },
+          "19": {
+            "rows": 0,
+            "trades": 0
+          },
+          "20": {
+            "rows": 0,
+            "trades": 0
+          },
+          "21": {
+            "rows": 0,
+            "trades": 0
+          },
+          "22": {
+            "rows": 8,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.87651172495705,
+        "per_instrument_backward_steps_pct": 28.85350327721179,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 627,
+          "[1,10)": 379983,
+          "[10,100)": 1486836,
+          "[100,500)": 5534018,
+          "[500,1000)": 6694958,
+          "[1000,5000)": 1481,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 928,
+          "[3.6e+06,8.64e+07)": 7789,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 34783873,
+        "identical_timestamp_pct": 41.664052188783,
+        "p50": 158.48931924611142,
+        "p90": 1778.2794100389228,
+        "p99": 25118.864315095823,
+        "p99.9": 1122018.4543019652
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 2238.72113856834,
+        "p90": 15848.93192461114,
+        "p99": 354813.389233576,
+        "p99.9": 3548133.8923357604
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 8679.3579,
+        "consecutive_trade_pairs": 2085223,
+        "same_price_as_previous_trade_pct": 52.6218059171609,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0035481338923357567,
+          "p99.9": 0.01995262314968879,
+          "p99.99": 0.1
+        },
+        "changes_over_10_pct": 200
+      },
+      "bid_ask_rows_with_both_sides": 1097541,
+      "crossed_quotes_on_those_rows": 39,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 27.0,
+        "q0.25": 81.0,
+        "q0.5": 1142.5,
+        "q0.75": 3243.75,
+        "q0.9": 21596.400000000016,
+        "q0.99": 404551.0200000012,
+        "q1": 1276178.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 1.0,
+        "q0.5": 12.0,
+        "q0.75": 340.25,
+        "q0.9": 2102.0,
+        "q0.99": 10320.36,
+        "q1": 32666.0
+      },
+      "instruments_without_any_trade": 621,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 822,
+        "100-999": 638,
+        "1k-9,999": 1101,
+        "10k-99,999": 335,
+        ">=100k": 96
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-10-11-21.csv",
+      "seconds": 272.4,
+      "rows": 64591844,
+      "rows_equity": 54654519,
+      "rows_index": 9937325,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 1,
+      "dates_in_file": {
+        "10-11-2021": 54654519
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2996,
+      "by_exchange": {
+        "ETR": {
+          "rows": 5101126,
+          "trade": 1110222,
+          "bid_only": 1254690,
+          "ask_only": 1245117,
+          "bid_and_ask": 1041249,
+          "other": 449848,
+          "trade_share_pct": 21.764253617730674,
+          "instruments": 1581
+        },
+        "FR": {
+          "rows": 31911561,
+          "trade": 732536,
+          "bid_only": 4716337,
+          "ask_only": 4592095,
+          "bid_and_ask": 70776,
+          "other": 21799817,
+          "trade_share_pct": 2.2955191693693706,
+          "instruments": 1055
+        },
+        "NL": {
+          "rows": 17641832,
+          "trade": 402188,
+          "bid_only": 2631009,
+          "ask_only": 2573943,
+          "bid_and_ask": 27501,
+          "other": 12007191,
+          "trade_share_pct": 2.279740562091284,
+          "instruments": 360
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.216857164180697,
+        "Last volume": 2.882682034032721,
+        "Bid": 17.82557632608568,
+        "Ask": 17.476326157037445,
+        "Bid volume": 17.685077422417713,
+        "Ask volume": 17.333904265080076,
+        "Total volume": 4.9611213301502115,
+        "Trading time": 37.636155941652326,
+        "Trading date": 2.0779416245525826,
+        "ISIN": 0.008980044266787893
+      },
+      "trades": 2244946,
+      "trades_pct_of_equity_rows": 4.107521282915325,
+      "trades_without_last_volume_pct": 29.9355975600304,
+      "currency": {
+        "EUR": 4728,
+        "USD": 75,
+        "GBP": 56,
+        "SEK": 29,
+        "CHF": 23,
+        "JPY": 2,
+        "AUD": 1
+      },
+      "isin_present_rows": 4908,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.06314025012277576,
+        "trading_time_present_pct": 37.636155941652326,
+        "trading_time_exactly_midnight_rows": 2815,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 2355,
+          "other": 433,
+          "bid_only": 27
+        },
+        "event_time_midnight_rows": 7674,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "-1": 4858,
+          "17": 1204,
+          "0": 643,
+          "5": 555,
+          "2": 87,
+          "9": 74,
+          "1": 56,
+          "11": 46,
+          "15": 29,
+          "16": 27,
+          "10": 27,
+          "13": 22,
+          "12": 19,
+          "14": 18,
+          "18": 7,
+          "8": 1,
+          "6": 1
+        },
+        "system_time_hour_rows": {
+          "-1": 4858,
+          "0": 686,
+          "1": 1361,
+          "2": 1339,
+          "3": 25276,
+          "4": 2807,
+          "5": 5704,
+          "6": 10742,
+          "7": 38587,
+          "8": 101340,
+          "9": 6699695,
+          "10": 7161993,
+          "11": 6055098,
+          "12": 5627324,
+          "13": 4831648,
+          "14": 5814372,
+          "15": 7522564,
+          "16": 7074781,
+          "17": 3662012,
+          "18": 4619,
+          "19": 919,
+          "20": 5442,
+          "21": 788,
+          "22": 469,
+          "23": 95
+        },
+        "event_first_hhmm": "00:00:43",
+        "event_last_hhmm": "23:56:50"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 4540,
+            "trades": 0
+          },
+          "1": {
+            "rows": 1300,
+            "trades": 0
+          },
+          "2": {
+            "rows": 13,
+            "trades": 0
+          },
+          "3": {
+            "rows": 7,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1577,
+            "trades": 0
+          },
+          "5": {
+            "rows": 3589,
+            "trades": 0
+          },
+          "6": {
+            "rows": 6584,
+            "trades": 0
+          },
+          "7": {
+            "rows": 3628,
+            "trades": 0
+          },
+          "8": {
+            "rows": 11827,
+            "trades": 0
+          },
+          "9": {
+            "rows": 595610,
+            "trades": 150466
+          },
+          "10": {
+            "rows": 556324,
+            "trades": 134657
+          },
+          "11": {
+            "rows": 480997,
+            "trades": 122799
+          },
+          "12": {
+            "rows": 456738,
+            "trades": 118020
+          },
+          "13": {
+            "rows": 415065,
+            "trades": 111094
+          },
+          "14": {
+            "rows": 499953,
+            "trades": 118065
+          },
+          "15": {
+            "rows": 791886,
+            "trades": 128366
+          },
+          "16": {
+            "rows": 787768,
+            "trades": 128485
+          },
+          "17": {
+            "rows": 473583,
+            "trades": 95207
+          },
+          "18": {
+            "rows": 2466,
+            "trades": 720
+          },
+          "19": {
+            "rows": 907,
+            "trades": 720
+          },
+          "20": {
+            "rows": 5436,
+            "trades": 720
+          },
+          "21": {
+            "rows": 785,
+            "trades": 720
+          },
+          "22": {
+            "rows": 449,
+            "trades": 183
+          },
+          "23": {
+            "rows": 94,
+            "trades": 0
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 3290,
+            "trades": 0
+          },
+          "1": {
+            "rows": 3,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1043,
+            "trades": 0
+          },
+          "3": {
+            "rows": 21289,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1036,
+            "trades": 0
+          },
+          "5": {
+            "rows": 1309,
+            "trades": 0
+          },
+          "6": {
+            "rows": 3467,
+            "trades": 0
+          },
+          "7": {
+            "rows": 28383,
+            "trades": 0
+          },
+          "8": {
+            "rows": 57700,
+            "trades": 0
+          },
+          "9": {
+            "rows": 3973324,
+            "trades": 119314
+          },
+          "10": {
+            "rows": 4327869,
+            "trades": 84296
+          },
+          "11": {
+            "rows": 3606684,
+            "trades": 82340
+          },
+          "12": {
+            "rows": 3339025,
+            "trades": 73155
+          },
+          "13": {
+            "rows": 2854113,
+            "trades": 57035
+          },
+          "14": {
+            "rows": 3353117,
+            "trades": 70441
+          },
+          "15": {
+            "rows": 4135200,
+            "trades": 80970
+          },
+          "16": {
+            "rows": 4107490,
+            "trades": 87112
+          },
+          "17": {
+            "rows": 2096145,
+            "trades": 77873
+          },
+          "18": {
+            "rows": 1044,
+            "trades": 0
+          },
+          "19": {
+            "rows": 10,
+            "trades": 0
+          },
+          "20": {
+            "rows": 5,
+            "trades": 0
+          },
+          "21": {
+            "rows": 3,
+            "trades": 0
+          },
+          "22": {
+            "rows": 11,
+            "trades": 0
+          },
+          "23": {
+            "rows": 1,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 1077,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 196,
+            "trades": 0
+          },
+          "3": {
+            "rows": 3980,
+            "trades": 0
+          },
+          "4": {
+            "rows": 194,
+            "trades": 0
+          },
+          "5": {
+            "rows": 251,
+            "trades": 0
+          },
+          "6": {
+            "rows": 690,
+            "trades": 0
+          },
+          "7": {
+            "rows": 5386,
+            "trades": 0
+          },
+          "8": {
+            "rows": 31866,
+            "trades": 0
+          },
+          "9": {
+            "rows": 2130638,
+            "trades": 59253
+          },
+          "10": {
+            "rows": 2277739,
+            "trades": 47645
+          },
+          "11": {
+            "rows": 1967340,
+            "trades": 43822
+          },
+          "12": {
+            "rows": 1831541,
+            "trades": 40699
+          },
+          "13": {
+            "rows": 1562417,
+            "trades": 31833
+          },
+          "14": {
+            "rows": 1961247,
+            "trades": 38949
+          },
+          "15": {
+            "rows": 2595410,
+            "trades": 49917
+          },
+          "16": {
+            "rows": 2179407,
+            "trades": 50541
+          },
+          "17": {
+            "rows": 1092236,
+            "trades": 39529
+          },
+          "18": {
+            "rows": 203,
+            "trades": 0
+          },
+          "19": {
+            "rows": 2,
+            "trades": 0
+          },
+          "20": {
+            "rows": 1,
+            "trades": 0
+          },
+          "21": {
+            "rows": 0,
+            "trades": 0
+          },
+          "22": {
+            "rows": 9,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.444402857966836,
+        "per_instrument_backward_steps_pct": 28.6902709005932,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 627,
+          "[1,10)": 369380,
+          "[10,100)": 1554624,
+          "[100,500)": 6309886,
+          "[500,1000)": 7437192,
+          "[1000,5000)": 209,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 1018,
+          "[3.6e+06,8.64e+07)": 6734,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 38971853,
+        "identical_timestamp_pct": 43.35583170756597,
+        "p50": 125.89254117941675,
+        "p90": 1412.5375446227554,
+        "p99": 22387.211385683422,
+        "p99.9": 891250.9381337459
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 1412.5375446227554,
+        "p90": 15848.93192461114,
+        "p99": 316227.7660168379,
+        "p99.9": 3162277.6601683795
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 8681.3211,
+        "consecutive_trade_pairs": 2242580,
+        "same_price_as_previous_trade_pct": 51.42790892632593,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0035481338923357567,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.08912509381337459
+        },
+        "changes_over_10_pct": 164
+      },
+      "bid_ask_rows_with_both_sides": 1140447,
+      "crossed_quotes_on_those_rows": 47,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 27.0,
+        "q0.25": 77.0,
+        "q0.5": 1103.0,
+        "q0.75": 3347.5,
+        "q0.9": 23350.5,
+        "q0.99": 420131.1500000022,
+        "q1": 1668923.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 1.0,
+        "q0.5": 13.0,
+        "q0.75": 329.75,
+        "q0.9": 2103.0,
+        "q0.99": 12718.75000000004,
+        "q1": 42300.0
+      },
+      "instruments_without_any_trade": 630,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 827,
+        "100-999": 646,
+        "1k-9,999": 1090,
+        "10k-99,999": 329,
+        ">=100k": 104
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-11-11-21.csv",
+      "seconds": 188.1,
+      "rows": 55547846,
+      "rows_equity": 45640118,
+      "rows_index": 9907728,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 1,
+      "dates_in_file": {
+        "11-11-2021": 45640118
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2996,
+      "by_exchange": {
+        "ETR": {
+          "rows": 4717467,
+          "trade": 1097032,
+          "bid_only": 1137521,
+          "ask_only": 1132242,
+          "bid_and_ask": 922451,
+          "other": 428221,
+          "trade_share_pct": 23.25468307462458,
+          "instruments": 1581
+        },
+        "FR": {
+          "rows": 26633096,
+          "trade": 588100,
+          "bid_only": 3898758,
+          "ask_only": 3872786,
+          "bid_and_ask": 68518,
+          "other": 18204934,
+          "trade_share_pct": 2.2081548461358005,
+          "instruments": 1055
+        },
+        "NL": {
+          "rows": 14289555,
+          "trade": 332256,
+          "bid_only": 2077942,
+          "ask_only": 2111014,
+          "bid_and_ask": 26354,
+          "other": 9741989,
+          "trade_share_pct": 2.325166878884612,
+          "instruments": 360
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.5511582594944215,
+        "Last volume": 2.9534871053576155,
+        "Bid": 17.818661205038953,
+        "Ask": 17.822651115845055,
+        "Bid volume": 17.657504741771263,
+        "Ask volume": 17.652918864057277,
+        "Total volume": 4.972605460836013,
+        "Trading time": 38.1965489221566,
+        "Trading date": 2.0186845266263336,
+        "ISIN": 0.015372440535758475
+      },
+      "trades": 2017388,
+      "trades_pct_of_equity_rows": 4.420207677815382,
+      "trades_without_last_volume_pct": 33.31188645912437,
+      "currency": {
+        "EUR": 6819,
+        "GBP": 62,
+        "CHF": 23,
+        "USD": 86,
+        "SEK": 29,
+        "JPY": 2,
+        "AUD": 1
+      },
+      "isin_present_rows": 7016,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.08225657961708162,
+        "trading_time_present_pct": 38.1965489221566,
+        "trading_time_exactly_midnight_rows": 2822,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 2359,
+          "other": 436,
+          "bid_only": 27
+        },
+        "event_time_midnight_rows": 9788,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "17": 1204,
+          "0": 646,
+          "3": 539,
+          "2": 85,
+          "9": 73,
+          "1": 58,
+          "11": 47,
+          "-1": 6965,
+          "10": 31,
+          "15": 28,
+          "16": 27,
+          "14": 22,
+          "12": 19,
+          "13": 20,
+          "5": 16,
+          "18": 6,
+          "8": 1,
+          "6": 1
+        },
+        "system_time_hour_rows": {
+          "-1": 6965,
+          "0": 674,
+          "1": 1338,
+          "2": 1329,
+          "3": 25812,
+          "4": 2,
+          "5": 7368,
+          "6": 10353,
+          "7": 33924,
+          "8": 95639,
+          "9": 5798842,
+          "10": 5860143,
+          "11": 5028707,
+          "12": 4764427,
+          "13": 3905110,
+          "14": 4134402,
+          "15": 6287485,
+          "16": 6415081,
+          "17": 3250715,
+          "18": 4483,
+          "19": 799,
+          "20": 5412,
+          "21": 775,
+          "22": 314,
+          "23": 19
+        },
+        "event_first_hhmm": "00:00:01",
+        "event_last_hhmm": "23:53:40"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 4514,
+            "trades": 0
+          },
+          "1": {
+            "rows": 1276,
+            "trades": 0
+          },
+          "2": {
+            "rows": 9,
+            "trades": 0
+          },
+          "3": {
+            "rows": 17,
+            "trades": 0
+          },
+          "4": {
+            "rows": 2,
+            "trades": 0
+          },
+          "5": {
+            "rows": 4807,
+            "trades": 0
+          },
+          "6": {
+            "rows": 5812,
+            "trades": 0
+          },
+          "7": {
+            "rows": 2115,
+            "trades": 0
+          },
+          "8": {
+            "rows": 13803,
+            "trades": 0
+          },
+          "9": {
+            "rows": 601509,
+            "trades": 156860
+          },
+          "10": {
+            "rows": 522115,
+            "trades": 131714
+          },
+          "11": {
+            "rows": 450920,
+            "trades": 121607
+          },
+          "12": {
+            "rows": 420303,
+            "trades": 113941
+          },
+          "13": {
+            "rows": 372469,
+            "trades": 106964
+          },
+          "14": {
+            "rows": 384642,
+            "trades": 112432
+          },
+          "15": {
+            "rows": 712719,
+            "trades": 128439
+          },
+          "16": {
+            "rows": 754226,
+            "trades": 125753
+          },
+          "17": {
+            "rows": 456512,
+            "trades": 96259
+          },
+          "18": {
+            "rows": 2397,
+            "trades": 720
+          },
+          "19": {
+            "rows": 797,
+            "trades": 720
+          },
+          "20": {
+            "rows": 5412,
+            "trades": 720
+          },
+          "21": {
+            "rows": 773,
+            "trades": 720
+          },
+          "22": {
+            "rows": 299,
+            "trades": 183
+          },
+          "23": {
+            "rows": 19,
+            "trades": 0
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 5086,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1039,
+            "trades": 0
+          },
+          "3": {
+            "rows": 21313,
+            "trades": 0
+          },
+          "4": {
+            "rows": 0,
+            "trades": 0
+          },
+          "5": {
+            "rows": 2129,
+            "trades": 0
+          },
+          "6": {
+            "rows": 3776,
+            "trades": 0
+          },
+          "7": {
+            "rows": 24722,
+            "trades": 0
+          },
+          "8": {
+            "rows": 56789,
+            "trades": 0
+          },
+          "9": {
+            "rows": 3388346,
+            "trades": 90154
+          },
+          "10": {
+            "rows": 3454169,
+            "trades": 60646
+          },
+          "11": {
+            "rows": 2985249,
+            "trades": 60239
+          },
+          "12": {
+            "rows": 2855723,
+            "trades": 59484
+          },
+          "13": {
+            "rows": 2242414,
+            "trades": 42312
+          },
+          "14": {
+            "rows": 2469409,
+            "trades": 53006
+          },
+          "15": {
+            "rows": 3518206,
+            "trades": 70965
+          },
+          "16": {
+            "rows": 3717862,
+            "trades": 78112
+          },
+          "17": {
+            "rows": 1885865,
+            "trades": 73182
+          },
+          "18": {
+            "rows": 989,
+            "trades": 0
+          },
+          "19": {
+            "rows": 2,
+            "trades": 0
+          },
+          "20": {
+            "rows": 0,
+            "trades": 0
+          },
+          "21": {
+            "rows": 1,
+            "trades": 0
+          },
+          "22": {
+            "rows": 5,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 1404,
+            "trades": 0
+          },
+          "1": {
+            "rows": 2,
+            "trades": 0
+          },
+          "2": {
+            "rows": 196,
+            "trades": 0
+          },
+          "3": {
+            "rows": 3943,
+            "trades": 0
+          },
+          "4": {
+            "rows": 0,
+            "trades": 0
+          },
+          "5": {
+            "rows": 416,
+            "trades": 0
+          },
+          "6": {
+            "rows": 764,
+            "trades": 0
+          },
+          "7": {
+            "rows": 5899,
+            "trades": 0
+          },
+          "8": {
+            "rows": 25193,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1808770,
+            "trades": 50323
+          },
+          "10": {
+            "rows": 1883795,
+            "trades": 35979
+          },
+          "11": {
+            "rows": 1592484,
+            "trades": 33548
+          },
+          "12": {
+            "rows": 1488346,
+            "trades": 34243
+          },
+          "13": {
+            "rows": 1290182,
+            "trades": 26014
+          },
+          "14": {
+            "rows": 1280298,
+            "trades": 26157
+          },
+          "15": {
+            "rows": 2056487,
+            "trades": 45046
+          },
+          "16": {
+            "rows": 1942872,
+            "trades": 44833
+          },
+          "17": {
+            "rows": 908288,
+            "trades": 36113
+          },
+          "18": {
+            "rows": 205,
+            "trades": 0
+          },
+          "19": {
+            "rows": 0,
+            "trades": 0
+          },
+          "20": {
+            "rows": 0,
+            "trades": 0
+          },
+          "21": {
+            "rows": 1,
+            "trades": 0
+          },
+          "22": {
+            "rows": 10,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.434844546958544,
+        "per_instrument_backward_steps_pct": 28.359503037899717,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 690,
+          "[1,10)": 313313,
+          "[10,100)": 1300068,
+          "[100,500)": 4988913,
+          "[500,1000)": 6329566,
+          "[1000,5000)": 69,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 882,
+          "[3.6e+06,8.64e+07)": 8960,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 32694661,
+        "identical_timestamp_pct": 42.32583723685038,
+        "p50": 158.48931924611142,
+        "p90": 1995.262314968881,
+        "p99": 28183.82931264455,
+        "p99.9": 1412537.5446227554
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 3162.2776601683795,
+        "p90": 15848.93192461114,
+        "p99": 316227.7660168379,
+        "p99.9": 3548133.8923357604
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 18600.0,
+        "consecutive_trade_pairs": 2015035,
+        "same_price_as_previous_trade_pct": 51.122486706186244,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.07079457843841387
+        },
+        "changes_over_10_pct": 94
+      },
+      "bid_ask_rows_with_both_sides": 1018237,
+      "crossed_quotes_on_those_rows": 45,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 27.0,
+        "q0.25": 78.0,
+        "q0.5": 966.5,
+        "q0.75": 2983.75,
+        "q0.9": 18851.5,
+        "q0.99": 377525.9500000015,
+        "q1": 1271565.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 1.0,
+        "q0.5": 10.0,
+        "q0.75": 282.25,
+        "q0.9": 2103.0,
+        "q0.99": 10547.550000000007,
+        "q1": 28231.0
+      },
+      "instruments_without_any_trade": 643,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 846,
+        "100-999": 666,
+        "1k-9,999": 1070,
+        "10k-99,999": 319,
+        ">=100k": 95
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-12-11-21.csv",
+      "seconds": 182.2,
+      "rows": 56111183,
+      "rows_equity": 46198201,
+      "rows_index": 9912982,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 1,
+      "dates_in_file": {
+        "12-11-2021": 46198201
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2996,
+      "by_exchange": {
+        "ETR": {
+          "rows": 4740809,
+          "trade": 1032938,
+          "bid_only": 1193344,
+          "ask_only": 1186861,
+          "bid_and_ask": 926363,
+          "other": 401303,
+          "trade_share_pct": 21.788222221144114,
+          "instruments": 1581
+        },
+        "FR": {
+          "rows": 26311300,
+          "trade": 604179,
+          "bid_only": 3785555,
+          "ask_only": 3757792,
+          "bid_and_ask": 64625,
+          "other": 18099149,
+          "trade_share_pct": 2.2962719439936454,
+          "instruments": 1055
+        },
+        "NL": {
+          "rows": 15146092,
+          "trade": 338389,
+          "bid_only": 2204942,
+          "ask_only": 2215690,
+          "bid_and_ask": 26152,
+          "other": 10360919,
+          "trade_share_pct": 2.2341670709513717,
+          "instruments": 360
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.405546008165989,
+        "Last volume": 2.8271512130959384,
+        "Bid": 17.75368915339366,
+        "Ask": 17.702825700940174,
+        "Bid volume": 17.602562056474884,
+        "Ask volume": 17.54460092504468,
+        "Total volume": 4.869979677347176,
+        "Trading time": 37.904146960181414,
+        "Trading date": 2.042356584404661,
+        "ISIN": 0.012931239465363597
+      },
+      "trades": 1975506,
+      "trades_pct_of_equity_rows": 4.276153523813622,
+      "trades_without_last_volume_pct": 34.01867673396082,
+      "currency": {
+        "EUR": 5786,
+        "USD": 81,
+        "GBP": 59,
+        "SEK": 29,
+        "CHF": 23,
+        "JPY": 2,
+        "AUD": 1
+      },
+      "isin_present_rows": 5974,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.07559385266971759,
+        "trading_time_present_pct": 37.904146960181414,
+        "trading_time_exactly_midnight_rows": 2822,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 2360,
+          "other": 434,
+          "bid_only": 28
+        },
+        "event_time_midnight_rows": 8746,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "-1": 5923,
+          "17": 1200,
+          "0": 643,
+          "5": 555,
+          "2": 85,
+          "9": 76,
+          "1": 58,
+          "11": 44,
+          "10": 32,
+          "15": 31,
+          "16": 29,
+          "13": 22,
+          "14": 20,
+          "12": 20,
+          "18": 6,
+          "8": 1,
+          "6": 1
+        },
+        "system_time_hour_rows": {
+          "-1": 5923,
+          "0": 746,
+          "1": 1325,
+          "2": 1333,
+          "3": 25358,
+          "4": 2765,
+          "5": 6352,
+          "6": 11711,
+          "7": 34899,
+          "8": 88544,
+          "9": 6931405,
+          "10": 5821986,
+          "11": 5197959,
+          "12": 4228951,
+          "13": 3851306,
+          "14": 3877053,
+          "15": 6049741,
+          "16": 6579091,
+          "17": 3469804,
+          "18": 4470,
+          "19": 766,
+          "20": 5411,
+          "21": 796,
+          "22": 430,
+          "23": 76
+        },
+        "event_first_hhmm": "00:00:38",
+        "event_last_hhmm": "23:59:58"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 4623,
+            "trades": 0
+          },
+          "1": {
+            "rows": 1259,
+            "trades": 0
+          },
+          "2": {
+            "rows": 13,
+            "trades": 0
+          },
+          "3": {
+            "rows": 2,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1562,
+            "trades": 0
+          },
+          "5": {
+            "rows": 3898,
+            "trades": 0
+          },
+          "6": {
+            "rows": 6525,
+            "trades": 0
+          },
+          "7": {
+            "rows": 2821,
+            "trades": 0
+          },
+          "8": {
+            "rows": 12023,
+            "trades": 0
+          },
+          "9": {
+            "rows": 626356,
+            "trades": 146936
+          },
+          "10": {
+            "rows": 495367,
+            "trades": 118965
+          },
+          "11": {
+            "rows": 459026,
+            "trades": 119591
+          },
+          "12": {
+            "rows": 404235,
+            "trades": 108297
+          },
+          "13": {
+            "rows": 375457,
+            "trades": 103452
+          },
+          "14": {
+            "rows": 368119,
+            "trades": 104224
+          },
+          "15": {
+            "rows": 711452,
+            "trades": 119971
+          },
+          "16": {
+            "rows": 780949,
+            "trades": 119794
+          },
+          "17": {
+            "rows": 477310,
+            "trades": 88645
+          },
+          "18": {
+            "rows": 2360,
+            "trades": 720
+          },
+          "19": {
+            "rows": 760,
+            "trades": 720
+          },
+          "20": {
+            "rows": 5409,
+            "trades": 720
+          },
+          "21": {
+            "rows": 790,
+            "trades": 720
+          },
+          "22": {
+            "rows": 417,
+            "trades": 183
+          },
+          "23": {
+            "rows": 76,
+            "trades": 0
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 4174,
+            "trades": 0
+          },
+          "1": {
+            "rows": 4,
+            "trades": 0
+          },
+          "2": {
+            "rows": 1039,
+            "trades": 0
+          },
+          "3": {
+            "rows": 21384,
+            "trades": 0
+          },
+          "4": {
+            "rows": 1016,
+            "trades": 0
+          },
+          "5": {
+            "rows": 1579,
+            "trades": 0
+          },
+          "6": {
+            "rows": 4360,
+            "trades": 0
+          },
+          "7": {
+            "rows": 25557,
+            "trades": 0
+          },
+          "8": {
+            "rows": 49733,
+            "trades": 0
+          },
+          "9": {
+            "rows": 4068499,
+            "trades": 111325
+          },
+          "10": {
+            "rows": 3374316,
+            "trades": 63030
+          },
+          "11": {
+            "rows": 2926414,
+            "trades": 68372
+          },
+          "12": {
+            "rows": 2435338,
+            "trades": 47744
+          },
+          "13": {
+            "rows": 2213757,
+            "trades": 46106
+          },
+          "14": {
+            "rows": 2205549,
+            "trades": 49730
+          },
+          "15": {
+            "rows": 3304526,
+            "trades": 69444
+          },
+          "16": {
+            "rows": 3695346,
+            "trades": 73699
+          },
+          "17": {
+            "rows": 1977693,
+            "trades": 74729
+          },
+          "18": {
+            "rows": 1005,
+            "trades": 0
+          },
+          "19": {
+            "rows": 3,
+            "trades": 0
+          },
+          "20": {
+            "rows": 2,
+            "trades": 0
+          },
+          "21": {
+            "rows": 1,
+            "trades": 0
+          },
+          "22": {
+            "rows": 5,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 1240,
+            "trades": 0
+          },
+          "1": {
+            "rows": 4,
+            "trades": 0
+          },
+          "2": {
+            "rows": 196,
+            "trades": 0
+          },
+          "3": {
+            "rows": 3972,
+            "trades": 0
+          },
+          "4": {
+            "rows": 187,
+            "trades": 0
+          },
+          "5": {
+            "rows": 320,
+            "trades": 0
+          },
+          "6": {
+            "rows": 825,
+            "trades": 0
+          },
+          "7": {
+            "rows": 5333,
+            "trades": 0
+          },
+          "8": {
+            "rows": 26842,
+            "trades": 0
+          },
+          "9": {
+            "rows": 2236413,
+            "trades": 61793
+          },
+          "10": {
+            "rows": 1952261,
+            "trades": 37730
+          },
+          "11": {
+            "rows": 1812464,
+            "trades": 39243
+          },
+          "12": {
+            "rows": 1389339,
+            "trades": 27896
+          },
+          "13": {
+            "rows": 1262026,
+            "trades": 24087
+          },
+          "14": {
+            "rows": 1303337,
+            "trades": 26000
+          },
+          "15": {
+            "rows": 2033726,
+            "trades": 41342
+          },
+          "16": {
+            "rows": 2102637,
+            "trades": 44647
+          },
+          "17": {
+            "rows": 1014752,
+            "trades": 35651
+          },
+          "18": {
+            "rows": 202,
+            "trades": 0
+          },
+          "19": {
+            "rows": 3,
+            "trades": 0
+          },
+          "20": {
+            "rows": 0,
+            "trades": 0
+          },
+          "21": {
+            "rows": 5,
+            "trades": 0
+          },
+          "22": {
+            "rows": 8,
+            "trades": 0
+          },
+          "23": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.17887060534826,
+        "per_instrument_backward_steps_pct": 28.044237491748333,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 767,
+          "[1,10)": 307264,
+          "[10,100)": 1373760,
+          "[100,500)": 5247006,
+          "[500,1000)": 6017234,
+          "[1000,5000)": 220,
+          "[5000,60000)": 1,
+          "[60000,3.6e+06)": 1012,
+          "[3.6e+06,8.64e+07)": 7829,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 33240112,
+        "identical_timestamp_pct": 42.776086314029264,
+        "p50": 141.2537544622754,
+        "p90": 1778.2794100389228,
+        "p99": 28183.82931264455,
+        "p99.9": 1258925.4117941686
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 3548.1338923357566,
+        "p90": 15848.93192461114,
+        "p99": 354813.389233576,
+        "p99.9": 3548133.8923357604
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 18600.0,
+        "consecutive_trade_pairs": 1973145,
+        "same_price_as_previous_trade_pct": 51.061376634763285,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0035481338923357567,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.08912509381337459
+        },
+        "changes_over_10_pct": 162
+      },
+      "bid_ask_rows_with_both_sides": 1018044,
+      "crossed_quotes_on_those_rows": 57,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 27.0,
+        "q0.25": 79.0,
+        "q0.5": 1008.0,
+        "q0.75": 3021.0,
+        "q0.9": 20447.5,
+        "q0.99": 347941.70000000304,
+        "q1": 1227022.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 1.0,
+        "q0.5": 10.0,
+        "q0.75": 311.0,
+        "q0.9": 2103.0,
+        "q0.99": 10336.100000000004,
+        "q1": 27534.0
+      },
+      "instruments_without_any_trade": 635,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 830,
+        "100-999": 663,
+        "1k-9,999": 1070,
+        "10k-99,999": 329,
+        ">=100k": 104
+      }
+    }
+  ]
+}

@@ -3,7 +3,9 @@
         build-simulator build-handler setup-detector \
         run-handler run-detector run-simulator run-simulator-foreground \
         run-all stop-all status logs \
-        test test-integration test-thesis test-simulator-completion clean-all
+        test test-integration test-thesis test-simulator-completion clean-all \
+        kafka-reset drain integration-test smoke-run describe-dataset \
+        run-thesis-experiment verify-run evaluate-thesis thesis-full
 
 # Default target
 .DEFAULT_GOAL := help
@@ -33,6 +35,29 @@ SIMULATOR_PID := $(PIDS_DIR)/simulator.pid
 # Log directory
 LOGS_DIR := $(PROJECT_ROOT)/logs
 
+# Thesis run: python of the detector venv, where a run's files are archived, and the
+# evaluation settings. Override on the command line, e.g.
+#   make evaluate-thesis RUN_DIR=results/thesis_20260921_101500 TARGET_FAR=0.5
+PY := $(DETECTOR_DIR)/venv/bin/python3
+RESULTS_DIR := results
+RUN_STAMP := $(shell date +%Y%m%d_%H%M%S)
+NEW_RUN_DIR := $(RESULTS_DIR)/thesis_$(RUN_STAMP)
+# the run that verify-run / evaluate-thesis work on (run-thesis-experiment repoints "latest")
+RUN_DIR ?= $(RESULTS_DIR)/latest
+# Kafka CLI tools run inside the broker container (no extra installs needed)
+KAFKA_EXEC := docker exec thesis-kafka
+KAFKA_BS := localhost:9092
+# Consumer groups of the two consumers. They must match consumer_group in
+# feed-handler/config/aggregator.yaml and consumer_group_id + "-multi" in
+# rrcf-detector/config/baselines.yaml (run_multi_model.py appends "-multi").
+HANDLER_GROUP := aggregator-group
+DETECTOR_GROUP := rrcf-detector-baselines-multi
+# how long "make drain" waits in total (seconds)
+DRAIN_TIMEOUT ?= 21600
+# alert threshold is picked on the clean days at this many alerts per 1000 scored vectors
+TARGET_FAR ?= 1.0
+THRESHOLDS ?= 1,1.5,2,3,4,5
+
 ##@ Help
 
 help: ## Display this help message
@@ -46,6 +71,10 @@ help: ## Display this help message
 	@echo "  3. make run-all      # Run the entire pipeline"
 	@echo "  4. make stop-all     # Stop all services"
 	@echo "  5. make kafka-down   # Stop infrastructure"
+	@echo ""
+	@echo "$(GREEN)Thesis run (see README, section 'Running the thesis experiment'):$(NC)"
+	@echo "  make setup && make smoke-run     # once: build, then a few-minute check of the whole chain"
+	@echo "  make thesis-full                 # reset, run, drain, archive, verify, evaluate"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(BLUE)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
@@ -110,6 +139,37 @@ kafka-down: ## Stop and remove Kafka infrastructure
 	@echo "$(YELLOW)Stopping infrastructure...$(NC)"
 	@docker compose down -v
 	@echo "$(GREEN)✓ Infrastructure stopped$(NC)"
+
+kafka-reset: ## Delete and recreate the pipeline topics and consumer offsets (empty start)
+	@echo "$(YELLOW)Resetting Kafka topics and consumer groups...$(NC)"
+	@if ! docker ps --format '{{.Names}}' | grep -q '^thesis-kafka$$'; then echo "$(RED)✗ Kafka is not running: make kafka-up$(NC)"; exit 1; fi
+	@# 1. delete the topics and the consumers' committed offsets
+	@for t in raw-ticks normalized-vectors health-events anomaly-scores; do \
+		$(KAFKA_EXEC) kafka-topics --bootstrap-server $(KAFKA_BS) --delete --topic $$t --if-exists > /dev/null 2>&1; \
+	done
+	@for g in $(HANDLER_GROUP) $(DETECTOR_GROUP); do \
+		$(KAFKA_EXEC) kafka-consumer-groups --bootstrap-server $(KAFKA_BS) --delete --group $$g > /dev/null 2>&1 || true; \
+	done
+	@# 2. wait until they are gone, then (re)create them as docker-compose.yml does
+	@#    (a deleted topic can linger for a while, so retry until each one reports the right partition count)
+	@for i in $$(seq 1 60); do \
+		LEFT=$$($(KAFKA_EXEC) kafka-topics --bootstrap-server $(KAFKA_BS) --list 2>/dev/null | grep -cE '^(raw-ticks|normalized-vectors|health-events|anomaly-scores)$$'); \
+		[ "$$LEFT" = "0" ] && break; sleep 2; \
+	done
+	@for i in $$(seq 1 45); do \
+		OK=1; \
+		for spec in raw-ticks:4 normalized-vectors:4 health-events:1 anomaly-scores:4; do \
+			t=$${spec%%:*}; p=$${spec##*:}; \
+			GOT=$$($(KAFKA_EXEC) kafka-topics --bootstrap-server $(KAFKA_BS) --describe --topic $$t 2>/dev/null | grep -o 'PartitionCount: *[0-9]*' | grep -o '[0-9]*$$'); \
+			if [ "$$GOT" != "$$p" ]; then \
+				OK=0; \
+				$(KAFKA_EXEC) kafka-topics --bootstrap-server $(KAFKA_BS) --create --if-not-exists --topic $$t --partitions $$p --replication-factor 1 --config retention.ms=7200000 > /dev/null 2>&1; \
+			fi; \
+		done; \
+		[ "$$OK" = "1" ] && break; sleep 2; \
+	done; \
+	[ "$$OK" = "1" ] || { echo "$(RED)✗ Topics were not created as expected$(NC)"; exit 1; }
+	@echo "$(GREEN)✓ Topics reset: raw-ticks, normalized-vectors, anomaly-scores (4 partitions), health-events (1)$(NC)"
 
 kafka-logs: ## Show Kafka logs
 	@docker compose logs -f kafka
@@ -228,7 +288,7 @@ stop-all: ## Stop all running pipeline components
 		if kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null; then \
 			pkill -P $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
 			kill $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
-			sleep 1; \
+			for i in $$(seq 1 240); do kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || break; sleep 0.5; done; \
 			kill -9 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
 			pkill -9 -f "multiprocessing.*spawn_main" 2>/dev/null || true; \
 			echo "$(GREEN)✓ Detector multi-model stopped$(NC)"; \
@@ -241,7 +301,7 @@ stop-all: ## Stop all running pipeline components
 	@if [ -f $(HANDLER_PID) ]; then \
 		if kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null; then \
 			kill $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
-			sleep 0.5; \
+			for i in $$(seq 1 120); do kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null || break; sleep 0.5; done; \
 			kill -9 $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
 			echo "$(GREEN)✓ Handler stopped$(NC)"; \
 		fi; \
@@ -302,6 +362,15 @@ test: ## Run all tests for all components
 	@echo ""
 	@echo "$(GREEN)✓ All tests completed$(NC)"
 
+integration-test: ## Feed-handler integration test: real binary against Kafka, 20-item checklist
+	@echo "$(BLUE)Running feed-handler integration test (needs 'make kafka-up')...$(NC)"
+	@cd $(HANDLER_DIR) && INTEGRATION_TEST=1 go test ./test/integration/... -v -count=1 -timeout=5m
+
+smoke-run: ## Whole chain on a small slice of real data + verification (run before a real run)
+	@echo "$(BLUE)Smoke run (needs 'make kafka-up'; uses its own smoke-* topics and results/smoke_*)...$(NC)"
+	@if [ ! -x $(PY) ]; then echo "$(RED)✗ $(PY) not found: run 'make setup' first$(NC)"; exit 1; fi
+	@$(PY) scripts/smoke_run.py
+
 test-integration: ## Run integration test of complete pipeline (30s test)
 	@echo "$(BLUE)Running pipeline integration test...$(NC)"
 	@rm -f ./test-run/*.log
@@ -333,6 +402,9 @@ clean-output-files: ## Clean output files from previous runs (scores, ground tru
 	@rm -f ./rrcf-detector/data/scores_isoforest.parquet
 	@rm -f ./rrcf-detector/data/scores_halfspace.parquet
 	@rm -f ./price-feed-simulator/anomaly_log.csv
+	@rm -f ./price-feed-simulator/anomaly_log_episodes.csv
+	@rm -f ./price-feed-simulator/anomaly_log_instruments.csv
+	@rm -rf ./feed-handler/data/eval
 	@rm -f ./price-feed-simulator/data/anomaly_log.csv
 	@rm -f ./price-feed-simulator/data/injection_manifest.json
 	@rm -f ./data/scores.parquet
@@ -349,66 +421,157 @@ clean-all: clean clean-output-files kafka-down ## Full cleanup (artifacts + outp
 
 ##@ Thesis Evaluation
 
-run-thesis-experiment: ## Run thesis evaluation experiment with anomaly injection
+describe-dataset: ## Profile the dataset (both directories, about 15 minutes) -> docs/dataset_profile/
+	@echo "$(BLUE)Profiling the replayed (trading_hours) data and the raw data...$(NC)"
+	@if [ ! -x $(PY) ]; then echo "$(RED)✗ $(PY) not found: run 'make setup' first$(NC)"; exit 1; fi
+	@$(PY) scripts/describe_dataset.py --data-dir $(SIMULATOR_DIR)/data/trading_hours --output docs/dataset_profile/trading_hours
+	@$(PY) scripts/describe_dataset.py --data-dir $(SIMULATOR_DIR)/data --output docs/dataset_profile/raw
+	@echo "$(GREEN)✓ Profiles written to docs/dataset_profile/$(NC)"
+
+# One thesis run, start to finish. Order matters:
+#   1. rebuild the two Go binaries (a stale binary is the easiest way to waste a run)
+#   2. remove the previous run's outputs and reset Kafka (topics + committed offsets)
+#   3. handler, detector, monitor, then the simulator in the foreground (stride and playback
+#      speed come from the configs and are not touched here)
+#   4. "drain": wait until the handler and detector have processed everything the simulator
+#      published. Stopping earlier throws away the unprocessed tail of the run.
+#   5. stop everything gracefully (the detector must close its parquet file, the handler
+#      runs its final silence scan), archive the run under results/thesis_<stamp>/inputs
+#      with the configs and git revisions, and run the verifier.
+# Nothing is committed or pushed; stage-by-stage problems show up in the verifier report.
+run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/thesis_<stamp>, verify
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo "$(BLUE)  Thesis Evaluation Experiment$(NC)"
+	@echo "$(BLUE)  Thesis Evaluation Experiment  ($(RUN_STAMP))$(NC)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@if [ ! -x $(PY) ]; then echo "$(RED)✗ $(PY) not found: run 'make setup' first$(NC)"; exit 1; fi
+	@# keep the machine awake until make exits (a run takes hours)
+	@if command -v caffeinate > /dev/null 2>&1; then (caffeinate -i -w $$PPID > /dev/null 2>&1 &); fi
+	@echo "$(YELLOW)Building binaries...$(NC)"
+	@$(MAKE) build-handler build-simulator
 	@echo ""
 	@echo "$(YELLOW)Cleaning previous run...$(NC)"
+	@$(MAKE) stop-all > /dev/null 2>&1 || true
 	@$(MAKE) clean-output-files > /dev/null 2>&1
 	@echo "$(GREEN)✓ Cleaned$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Starting infrastructure...$(NC)"
-	@make kafka-up > /dev/null 2>&1
-	@echo "$(GREEN)✓ Kafka ready$(NC)"
+	@echo "$(YELLOW)Starting infrastructure and resetting topics...$(NC)"
+	@$(MAKE) kafka-up > /dev/null 2>&1
+	@$(MAKE) kafka-reset
 	@echo ""
-	@echo "$(YELLOW)Starting handler and detector...$(NC)"
-	@$(MAKE) run-handler > /dev/null 2>&1
+	@echo "$(YELLOW)Starting handler, detector and monitor...$(NC)"
+	@mkdir -p $(PIDS_DIR) $(LOGS_DIR)
+	@$(MAKE) run-handler
 	@sleep 5
-	@$(MAKE) run-detector > /dev/null 2>&1
+	@$(MAKE) run-detector
 	@sleep 5
-	@echo "$(GREEN)✓ Handler and detector ready$(NC)"
+	@(./scripts/monitor_pipeline.sh > /dev/null 2>&1 &)
+	@echo "$(GREEN)✓ Handler, detector and monitor running$(NC)"
+	@echo "  Logs: tail -f $(LOGS_DIR)/handler.log $(LOGS_DIR)/detector-multi.log $(LOGS_DIR)/monitor.log"
 	@echo ""
-	@echo "$(YELLOW)Running simulator with anomaly injection...$(NC)"
-	@echo "  This will take 4-5 minutes depending on dataset size"
+	@echo "$(YELLOW)Running simulator with anomaly injection (foreground)...$(NC)"
 	@echo "  $(BLUE)Progress: tail -f logs/simulator.log$(NC)"
-	@echo ""
-	@cd $(SIMULATOR_DIR) && ./bin/simulator -config config/simulator-with-anomalies.yaml
-	@echo ""
+	@cd $(SIMULATOR_DIR) && ./bin/simulator -config config/simulator-with-anomalies.yaml > $(LOGS_DIR)/simulator.log 2>&1 \
+		|| { echo "$(RED)✗ Simulator failed; last lines of logs/simulator.log:$(NC)"; tail -20 $(LOGS_DIR)/simulator.log; $(MAKE) stop-all > /dev/null 2>&1; exit 1; }
 	@echo "$(GREEN)✓ Simulator run complete$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Stopping pipeline components...$(NC)"
-	@$(MAKE) stop-all > /dev/null 2>&1
-	@echo "$(GREEN)✓ Components stopped$(NC)"
+	@echo "$(YELLOW)Waiting for the handler and detector to process everything...$(NC)"
+	@$(MAKE) drain \
+		|| { echo "$(RED)✗ Drain did not finish; stopping. Outputs are NOT archived.$(NC)"; $(MAKE) stop-all > /dev/null 2>&1; exit 1; }
 	@echo ""
-	@echo "$(YELLOW)Verifying output files...$(NC)"
-	@ls -lh ./price-feed-simulator/anomaly_log.csv ./price-feed-simulator/data/injection_manifest.json ./rrcf-detector/data/scores.parquet 2>&1 || echo "$(RED)✗ Missing output files$(NC)"
+	@echo "$(YELLOW)Stopping pipeline components (graceful)...$(NC)"
+	@$(MAKE) stop-all
+	@echo ""
+	@echo "$(YELLOW)Archiving the run to $(NEW_RUN_DIR)/inputs ...$(NC)"
+	@mkdir -p $(NEW_RUN_DIR)/inputs/logs $(NEW_RUN_DIR)/inputs/config
+	@cp $(SIMULATOR_DIR)/anomaly_log.csv $(SIMULATOR_DIR)/anomaly_log_episodes.csv $(SIMULATOR_DIR)/anomaly_log_instruments.csv $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ simulator ground-truth files missing$(NC)"
+	@cp $(SIMULATOR_DIR)/data/injection_manifest.json $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ manifest missing$(NC)"
+	@cp $(HANDLER_DIR)/data/eval/*.csv $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ handler alert logs missing$(NC)"
+	@cp $(DETECTOR_DIR)/data/scores_rrcf.parquet $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ scores file missing$(NC)"
+	@cp $(LOGS_DIR)/*.log $(NEW_RUN_DIR)/inputs/logs/ 2>/dev/null || true
+	@cp $(SIMULATOR_DIR)/config/simulator-with-anomalies.yaml $(HANDLER_DIR)/config/aggregator.yaml $(DETECTOR_DIR)/config/baselines.yaml $(NEW_RUN_DIR)/inputs/config/
+	@{ for d in . $(SIMULATOR_DIR) $(HANDLER_DIR) $(DETECTOR_DIR); do \
+		echo "$$d: $$(git -C $$d rev-parse --short HEAD) $$(git -C $$d status --porcelain | wc -l | tr -d ' ') uncommitted files"; \
+	done; } > $(NEW_RUN_DIR)/inputs/versions.txt
+	@ln -sfn thesis_$(RUN_STAMP) $(RESULTS_DIR)/latest
+	@echo "$(GREEN)✓ Archived; $(RESULTS_DIR)/latest -> thesis_$(RUN_STAMP)$(NC)"
+	@echo ""
+	@$(MAKE) verify-run RUN_DIR=$(NEW_RUN_DIR) || echo "$(RED)✗ The verifier reported FAILED checks: read $(NEW_RUN_DIR)/verify.txt before evaluating$(NC)"
 	@echo ""
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo "$(GREEN)  Experiment Complete!$(NC)"
+	@echo "$(GREEN)  Experiment complete: $(NEW_RUN_DIR)$(NC)"
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo ""
-	@echo "Ground truth: ./price-feed-simulator/anomaly_log.csv"
-	@echo "Manifest:     ./price-feed-simulator/data/injection_manifest.json"
-	@echo "Scores:       ./rrcf-detector/data/scores.parquet"
+	@echo "Next: make evaluate-thesis   (uses $(RESULTS_DIR)/latest)"
 	@echo ""
 
-evaluate-thesis: ## Evaluate thesis results (RQ1 + RQ2)
+drain: ## Wait until the handler and detector have processed everything the simulator published
+	@# Run after the simulator has finished and BEFORE stop-all: stopping earlier throws away the
+	@# unprocessed tail. Three stages: handler has consumed raw-ticks; detector has consumed
+	@# normalized-vectors (and no new vectors appear); the scores file has stopped growing.
+	@T0=$$(date +%s); \
+	state() { $(KAFKA_EXEC) kafka-consumer-groups --bootstrap-server $(KAFKA_BS) --describe --group $$1 2>/dev/null \
+		| awk -v t=$$2 '$$2==t {n++; lag+=($$6=="-")?$$5:$$6; end+=$$5} END {if (n==0) print "-1 -1"; else print lag, end}'; }; \
+	late() { [ $$(( $$(date +%s) - T0 )) -lt $(DRAIN_TIMEOUT) ] || { echo "$(RED)✗ timed out after $(DRAIN_TIMEOUT)s$(NC)"; exit 1; }; }; \
+	set -- $$(state $(HANDLER_GROUP) raw-ticks); \
+	[ "$$2" -gt 0 ] || { echo "$(RED)✗ nothing was published to raw-ticks (or the handler's consumer group does not exist)$(NC)"; exit 1; }; \
+	echo "simulator published $$2 messages; waiting for the feed-handler..."; \
+	while [ "$$1" != "0" ]; do \
+		late; echo "  handler lag: $$1"; sleep 15; set -- $$(state $(HANDLER_GROUP) raw-ticks); \
+		[ "$$1" -ge 0 ] || { echo "$(RED)✗ handler consumer group disappeared$(NC)"; exit 1; }; \
+	done; \
+	echo "$(GREEN)  handler done$(NC); waiting for the detector..."; \
+	STABLE=0; PREV=""; \
+	set -- $$(state $(DETECTOR_GROUP) normalized-vectors); \
+	while [ $$STABLE -lt 3 ]; do \
+		late; \
+		[ "$$1" -ge 0 ] || { echo "$(RED)✗ detector consumer group not found: is the detector running? (logs/detector-multi.log)$(NC)"; exit 1; }; \
+		if [ "$$1" = "0" ] && [ "$$2" = "$$PREV" ]; then STABLE=$$((STABLE+1)); else STABLE=0; fi; \
+		PREV=$$2; echo "  detector lag: $$1 (vectors on topic: $$2)"; sleep 10; \
+		set -- $$(state $(DETECTOR_GROUP) normalized-vectors); \
+	done; \
+	echo "$(GREEN)  detector done$(NC); waiting for the scores file to settle..."; \
+	F=$(DETECTOR_DIR)/data/scores_rrcf.parquet; STABLE=0; PREV=-1; \
+	while [ $$STABLE -lt 3 ]; do \
+		late; SZ=$$(stat -f %z $$F 2>/dev/null || echo 0); \
+		if [ "$$SZ" = "$$PREV" ]; then STABLE=$$((STABLE+1)); else STABLE=0; fi; \
+		PREV=$$SZ; sleep 10; \
+	done; \
+	[ "$$PREV" -gt 0 ] || { echo "$(RED)✗ the detector wrote no scores to $$F (logs/detector-multi.log)$(NC)"; exit 1; }; \
+	echo "$(GREEN)✓ Everything the simulator published has been processed$(NC)"
+
+verify-run: ## Stage-by-stage PASS/WARN/FAIL report on an archived run (RUN_DIR=..., default results/latest)
+	@echo "$(BLUE)Verifying $(RUN_DIR) against the live Kafka topics...$(NC)"
+	@if [ ! -d $(RUN_DIR)/inputs ]; then echo "$(RED)✗ $(RUN_DIR)/inputs not found (run make run-thesis-experiment first)$(NC)"; exit 1; fi
+	@cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/verify_run.py \
+		--manifest ../$(RUN_DIR)/inputs/injection_manifest.json \
+		--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
+		--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
+		--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
+		--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
+		--scores ../$(RUN_DIR)/inputs/scores_rrcf.parquet \
+		--kafka localhost:9092 \
+		--json ../$(RUN_DIR)/verify.json > ../$(RUN_DIR)/verify.txt 2>&1; \
+		STATUS=$$?; cat ../$(RUN_DIR)/verify.txt; exit $$STATUS
+
+evaluate-thesis: ## Evaluate an archived run (RUN_DIR=..., default results/latest; TARGET_FAR, THRESHOLDS)
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo "$(BLUE)  Thesis Evaluation: RQ1 + RQ2 (Optimized)$(NC)"
+	@echo "$(BLUE)  Thesis Evaluation: RQ1 + RQ2   ($(RUN_DIR))$(NC)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo ""
+	@if [ ! -d $(RUN_DIR)/inputs ]; then echo "$(RED)✗ $(RUN_DIR)/inputs not found (run make run-thesis-experiment first)$(NC)"; exit 1; fi
+	@# the alert threshold is picked on the clean days (--target-far), never on the injected data
 	@cd $(DETECTOR_DIR) && \
 		./venv/bin/python3 scripts/evaluate_thesis.py \
-		--ground-truth-csv ../price-feed-simulator/anomaly_log.csv \
-		--ground-truth-manifest ../price-feed-simulator/data/injection_manifest.json \
-		--scores ./data/scores_rrcf.parquet \
-		--output ../results/thesis_$(shell date +%Y%m%d_%H%M%S)
+		--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
+		--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
+		--scores ../$(RUN_DIR)/inputs/scores_rrcf.parquet \
+		--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
+		--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
+		--thresholds $(THRESHOLDS) --target-far $(TARGET_FAR) \
+		--output ../$(RUN_DIR)/evaluation
 	@echo ""
-	@echo "$(GREEN)✓ Evaluation complete!$(NC)"
-	@echo "Results are ready for thesis inclusion."
+	@echo "$(GREEN)✓ Evaluation complete: $(RUN_DIR)/evaluation$(NC)"
 
-thesis-full: run-thesis-experiment evaluate-thesis ## Complete thesis evaluation workflow (run + evaluate)
+thesis-full: run-thesis-experiment evaluate-thesis ## Complete workflow: run + verify + evaluate
 	@echo ""
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(GREEN)  Thesis Evaluation Complete!$(NC)"

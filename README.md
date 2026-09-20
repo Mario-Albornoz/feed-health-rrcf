@@ -85,6 +85,10 @@ The simulator will run in the foreground and show real-time statistics. Results 
 
 **Press `Ctrl+C`** to stop the simulator when done.
 
+> `make run-all` is the general-purpose run: it does not reset Kafka, wait for the pipeline to drain or
+> archive anything. For the thesis experiment use the workflow in **Thesis Evaluation** below
+> (`make run-thesis-experiment` / `make thesis-full`).
+
 ### 4. Stop Everything
 
 Stop all pipeline components:
@@ -108,7 +112,13 @@ make kafka-up          # Start Kafka + Zookeeper
 make kafka-down        # Stop Kafka + Zookeeper (removes volumes)
 make kafka-logs        # View Kafka logs
 make kafka-status      # Check service status
+make kafka-reset       # Delete and recreate the pipeline topics + consumer offsets (empty start)
 ```
+
+`kafka-reset` is what makes a run start from nothing: it deletes `raw-ticks`, `normalized-vectors`,
+`health-events` and `anomaly-scores` and the two consumers' committed offsets, then recreates the
+topics (4 partitions, 1 for `health-events`, 2 h retention, as in `docker-compose.yml`). `kafka-up`
+alone keeps whatever an earlier run left in the topics. `run-thesis-experiment` calls it for you.
 
 ### Pipeline Execution
 
@@ -117,13 +127,27 @@ make run-all           # Run complete pipeline (recommended)
 make run-handler       # Run feed-handler only (background)
 make run-detector      # Run multi-model detector pipeline (background)
 make run-simulator     # Run simulator only (foreground)
-make stop-all          # Stop all components
+make drain             # Wait until the handler and detector processed everything (see below)
+make stop-all          # Stop all components (gracefully: waits for the detector and handler to exit)
 make status            # Show status of all components
 ```
 
-**Note**: `make run-detector` runs the **multi-model pipeline** including:
-- Stream collector (`scripts/stream_collector.py`) - saves Parquet files
-- Multi-model runner (`scripts/run_multi_model.py`) - runs all detection models
+`make stop-all` sends SIGTERM and then **waits** (up to 2 min for the detector, 1 min for the handler)
+before forcing a kill, because the detector has to close its parquet file (the footer is written on
+close; a killed file is unreadable) and the handler runs a final silence scan. Never stop a run with
+`kill -9`.
+
+`make drain` is for the moment after the simulator has finished: the handler and detector are
+usually still working through the backlog in Kafka. It waits for (1) the handler to consume
+everything in `raw-ticks`, (2) the detector to consume everything in `normalized-vectors`, (3) the
+scores file to stop growing. It fails if nothing was published, if a consumer group is missing, or
+after `DRAIN_TIMEOUT` seconds (default 21600). Only then is it safe to `stop-all`.
+
+**Note**: `make run-detector` starts `scripts/run_multi_model.py` with `config/baselines.yaml`.
+The models it runs are hard-coded in `_init_models` of that script (only `rrcf` is active; the
+baselines are commented out there; the `models:` list in `baselines.yaml` is not read by it). Each
+model writes its own `rrcf-detector/data/scores_<model>.parquet`. The stream collector is disabled in
+`scripts/start_detector.sh`.
 
 For standalone RRCF only: `cd rrcf-detector && python main.py`
 
@@ -161,8 +185,18 @@ tail -f logs/detector-zscore.log     # Z-Score model logs
 
 ```bash
 make test              # Run all unit tests for all components
-make test-integration  # Run full pipeline integration test (30s)
+make integration-test  # Feed-handler integration test: real aggregator binary against Kafka (needs make kafka-up)
+make smoke-run         # Whole chain on a small slice of real data, then verify + evaluate (needs make kafka-up)
+make test-integration  # Older shell-based pipeline test (30s)
 ```
+
+`make integration-test` builds and starts the real aggregator, publishes simulator-format messages
+and prints a 20-item PASS/FAIL checklist (price crosses the wire, quarantine, silence reported once,
+sequence numbers, graceful shutdown, ...). `make smoke-run` runs the real simulator, Kafka, handler
+and detector on ~600,000 rows with all four phases injected into that slice, on its own `smoke-*` topics,
+and writes `results/smoke_<stamp>/` (`report.txt`, `verify.json`, `evaluation/`, logs). It takes a few
+minutes and touches nothing else. **Run both before a real run**; their numbers are a sanity check on a
+tiny slice, not results.
 
 #### Integration Test
 
@@ -190,11 +224,9 @@ go test ./internal/... -v -race
 # With coverage
 go test ./internal/... -v -cover
 
-# Handler integration tests (requires Kafka via Docker Compose)
-cd feed-handler
+# Handler integration test (requires Kafka; from the repo root)
 make kafka-up
-make test-integration
-make kafka-down
+make integration-test
 
 # Simulator benchmarks
 cd price-feed-simulator && make benchmark
@@ -227,7 +259,7 @@ python scripts/test_integration.py
 ### Cleanup
 
 ```bash
-make clean-output-files # Remove output files from previous runs (scores, ground truth, logs)
+make clean-output-files # Remove the working outputs of the last run (scores, anomaly logs, episodes, alert logs, logs/*.log)
 make clean             # Remove build artifacts and logs
 make clean-all         # Full cleanup (includes Docker volumes and venv)
 ```
@@ -534,334 +566,150 @@ For issues or questions:
 
 ## Thesis Evaluation
 
-### Overview
+### What this does
 
-The thesis evaluation system answers two research questions:
-- **RQ1**: Can two-timescale RRCF detect all four phases of feed degradation?
-- **RQ2**: Does RRCF outperform baseline methods (Z-Score, Isolation Forest, Half-Space Trees, Online-iForest)?
+The experiment replays the DEBS 2022 days (8-12 Nov 2021) through the whole pipeline while the
+simulator injects anomalies on some days, then measures how well each anomaly is detected.
 
-The system automatically:
-1. Injects synthetic anomalies into real DEBS 2022 data
-2. Runs all 5 detection models on the same data stream
-3. Generates ground truth logs
-4. Evaluates detection performance with phase-specific metrics
-5. Produces LaTeX tables and publication-quality plots
+- **RQ1**: can the two-timescale adaptive RRCF detect all four phases of feed degradation?
+- **RQ2**: how does it compare with baselines? (**not wired into `make` yet**: the baselines have
+  not been run through the new protocol; only RRCF is run and evaluated by the targets below.)
 
-### Quick Start (Complete Workflow)
+| Day (Nov 2021) | What is injected | Who detects it |
+|---|---|---|
+| 08 | nothing (clean warm-up) | - |
+| 09 | Phase 1: tick-rate decline (40% of instruments, rate falls 100% -> 30%, 09:30-14:00) | RRCF |
+| 10 | Phase 2: contextual price anomalies on last traded price (09:30-15:00); Phase 3: 120 s feed silence on 70% of the `ETR` instruments (15:30-16:00) | RRCF (phase 2), silence detector in the feed-handler (phase 3) |
+| 11 | Phase 4: implausible prices (RRCF) and timestamp rewinds (validator in the feed-handler), 09:30-15:30 | RRCF / validator |
+| 12 | nothing (clean, used to set the alert threshold) | - |
 
-Run the entire thesis evaluation in one command:
+The schedule and densities live in `price-feed-simulator/config/simulator-with-anomalies.yaml`.
+Design, reasons and measurements are in `docs/EVALUATION_METHODOLOGY.md`.
 
-```bash
-make thesis-full
-```
+**Do not lower the worker stride (1 vector in 10 is scored, `rrcf-detector/src/detection/generic_worker.py`)
+and do not slow the playback.** Both are deliberate CPU workarounds; the evaluation is built around them.
 
-**Duration**: Depends on dataset size and configuration (typically 10-30 minutes)
+### Before you start (once)
 
-**Note**: First run will pause ~10 minutes while Python loads libraries (subsequent runs are faster)
+1. **Prerequisites**: Docker (running), Go, Python 3.12 (`brew install python@3.12`), and the data
+   in `price-feed-simulator/data/` (raw day files) and `price-feed-simulator/data/trading_hours/`
+   (the 09:30-16:00 copies that are actually replayed).
+2. `make setup` builds the two Go binaries and creates the detector venv
+   (`rrcf-detector/venv`). Needed again after `make clean` / `make clean-all` (which delete them).
+3. `make kafka-up` starts Kafka and Zookeeper.
+4. Checks, in this order (each is quick):
+   ```bash
+   make test              # unit tests of the three components
+   make integration-test  # feed-handler against real Kafka, 20-item checklist
+   make smoke-run         # whole chain on a small slice; read the report it prints
+   ```
+   Anything FAIL: fix that first; a real run will not fix it.
+   (`make smoke-run` may show one warning about how many episode instruments appear in the scores on a
+   small slice; that is expected.)
 
-### Step-by-Step Workflow
-
-If you prefer to run each step separately:
-
-#### Step 1: Run Experiment with Anomaly Injection
-
-```bash
-make run-thesis-experiment
-```
-
-This will:
-- Clean previous run data
-- Start Kafka infrastructure
-- Run simulator with synthetic anomaly injection (4 phases)
-- Collect model predictions from all 5 models
-- Generate ground truth logs
-
-**Output Files:**
-- `price-feed-simulator/anomaly_log.csv` - Detailed injection log
-- `price-feed-simulator/injection_manifest.json` - Experiment metadata
-- `data/scores.parquet` - All model predictions (unified file)
-
-#### Step 2: Evaluate Results
+### Running the experiment
 
 ```bash
-make evaluate-thesis
+make thesis-full            # = run-thesis-experiment + evaluate-thesis
 ```
 
-This will:
-- Load ground truth and model predictions
-- Compute RQ1 metrics (per-phase detection by RRCF)
-- Compute RQ2 metrics (comparative performance across models)
-- Generate LaTeX tables ready for thesis
-- Create publication-quality plots
+or the two halves separately (recommended for the first real run, so you can read the verifier report
+before evaluating):
 
-**Output Files:** `results/thesis_YYYYMMDD_HHMMSS/`
-- `rq1_results.json` - Phase detection performance
-- `rq2_results.json` - Model comparison metrics
-- `tables/table_rq1_phase_detection.tex` - LaTeX table for RQ1
-- `tables/table_rq2_model_comparison.tex` - LaTeX table for RQ2
-- `figures/fig_rq1_heatmap.pdf` - Phase performance heatmap
-- `figures/fig_rq2_model_comparison.pdf` - Model comparison bar chart
+```bash
+make run-thesis-experiment  # the run; ends with the verifier report
+make evaluate-thesis        # scores and tables; uses the run it just archived (results/latest)
+```
 
-### Understanding the Four Phases
+The run takes **hours** (about 200 M rows are replayed; a full run has not been timed). Progress:
+`tail -f logs/simulator.log`, `logs/handler.log`, `logs/detector-multi.log`, `logs/monitor.log`.
+The Mac is kept awake with `caffeinate` for as long as `make` runs. Keep the terminal open.
 
-The system evaluates detection across four phases of feed degradation:
+`make run-thesis-experiment` does, in this order:
 
-1. **Phase 1: Gradual Tick Rate Decline** (Day 08-11-2021, 09:30-14:00)
-   - Collective anomaly: systematic decrease in tick rate
-   - Detection window: 2 minutes (trend confirmation needed)
+1. **Rebuilds** the feed-handler and simulator binaries (`build-handler`, `build-simulator`). Note that
+   this overwrites the tracked `price-feed-simulator/bin/simulator`.
+2. **Cleans** the previous run's working files (`stop-all`, `clean-output-files`): scores, `anomaly_log*.csv`,
+   `feed-handler/data/eval/`, `logs/*.log`. Archived runs in `results/` are not touched.
+3. **Starts Kafka** and runs `kafka-reset` (empty topics, no committed offsets).
+4. Starts the **handler**, the **detector** and the **monitor**.
+5. Runs the **simulator in the foreground** with `simulator-with-anomalies.yaml` (output in `logs/simulator.log`).
+6. Runs `make drain`: waits until the handler and detector have processed everything the simulator published.
+7. `make stop-all` (graceful).
+8. **Archives** the run to `results/thesis_<timestamp>/inputs/` and points `results/latest` at it:
+   - `anomaly_log_episodes.csv` (ground truth, one row per episode, with message `Seq`),
+     `anomaly_log_instruments.csv` (rows and trades per instrument per day), `anomaly_log.csv`
+     (tick-level log), `injection_manifest.json`
+   - `silence_alerts.csv`, `validation_alerts.csv` (the handler's rule-based detectors)
+   - `scores_rrcf.parquet` (RRCF scores; large)
+   - `logs/`, `config/` (the three configs used) and `versions.txt` (git revision of each repo and
+     how many uncommitted files it had)
+9. Runs `make verify-run` on it and writes `verify.txt` / `verify.json` next to `inputs/`.
 
-2. **Phase 2: Contextual Price Anomalies** (Day 09-11-2021, 09:30-15:00)
-   - Individual prices out of context (spikes, stale prices)
-   - Detection window: 30 seconds (context history needed)
+If the simulator fails, or `drain` times out, everything is stopped and **nothing is archived**; the
+message says why.
 
-3. **Phase 3: Feed Silence** (Day 08-11-2021, 14:30-16:00)
-   - Complete lack of updates for instruments
-   - Detection window: 10 seconds (immediately observable)
+### Reading the verifier report
 
-4. **Phase 4: Sudden Point Failures** (Day 10-11-2021, 09:30-15:30)
-   - Abrupt failures (malformed messages, implausible prices)
-   - Detection window: 5 seconds (instant detection)
+`make verify-run` (also `make verify-run RUN_DIR=results/thesis_<stamp>` for an older run) prints, per stage
+(*Ground truth (simulator)*, *Kafka*, *Kafka: raw messages*, *Kafka: feature vectors*, *Feed-handler
+evaluation logs*, *Detector scores*, *Scores meet ground truth*), `PASS`, `WARN`, `FAIL` or `skip`, and for a
+WARN/FAIL what was expected and a hint about the likely cause. Rule of thumb:
+
+- **FAIL**: do not evaluate; the hint names the stage that broke (e.g. no episodes, messages lost
+  between Kafka topics, scores missing for the injected instruments).
+- **WARN**: read it; some are expected (see the methodology chapter), some mean a run is thinner than planned.
+- Kafka topics have 2 h retention; run the verifier soon after the run (the run does it for you).
+
+### Evaluating
+
+```bash
+make evaluate-thesis                                     # latest run
+make evaluate-thesis RUN_DIR=results/thesis_20260921_101500   # a specific run
+make evaluate-thesis TARGET_FAR=0.5 THRESHOLDS=1,2,3,4       # other settings
+```
+
+`TARGET_FAR` (default 1.0) is the false-alarm rate, in alerts per 1000 scored vectors, at which the alert
+threshold is fixed. It is chosen on the **clean days** (days with no injected episode; day 12 is the headline,
+day 08 is excluded as warm-up but reported), never on the injected data. `THRESHOLDS`
+adds a sweep. Output: `results/thesis_<stamp>/evaluation/evaluation_results.json` and `sweep.csv`.
+It is safe to run this many times on the same run.
+
+### If something goes wrong
+
+| Symptom | What to do |
+|---|---|
+| `make ...: rrcf-detector/venv/bin/python3 not found` | `make setup` (the venv is deleted by `make clean-all`) |
+| `Kafka is not running` | `make kafka-up` |
+| Run interrupted / terminal closed | `make stop-all`, then just start `make run-thesis-experiment` again (it cleans and resets) |
+| `drain` timed out or a consumer group is missing | look at `logs/handler.log` / `logs/detector-multi.log`; a stopped consumer never finishes |
+| Simulator failed | `tail logs/simulator.log`; the usual causes are missing data files or a Kafka connection |
+| Evaluation stops with "No threshold in [...] reaches N alerts per 1000 vectors" | no threshold in `THRESHOLDS` is high enough for `TARGET_FAR`: `make evaluate-thesis THRESHOLDS=1,2,3,4,5,6,8,10` |
+| Evaluation says a file is missing | the run was not archived; check `results/latest` and `results/thesis_<stamp>/inputs/` |
+
+### Other commands
+
+```bash
+make describe-dataset       # profile the whole dataset -> docs/dataset_profile/ (about 15 minutes)
+make kafka-reset            # empty Kafka topics without a run
+make drain                  # only the waiting step
+make verify-run             # only the verifier
+```
+
+Older scripts `scripts/preflight_test.sh`, `scripts/check_kafka_messages.sh` and `test-run/*` (used by
+`make test-thesis`) predate this workflow and still look for `scores.parquet` and the old `anomaly_log.csv`
+layout; they are not part of the procedure above.
 
 ### Configuration
 
-#### Anomaly Injection Settings
+- Injection (days, windows, densities, per-instrument quota): `price-feed-simulator/config/simulator-with-anomalies.yaml`
+- Feed-handler (windows, silence quantile rule, validator tolerance, alert logs, session hours): `feed-handler/config/aggregator.yaml`
+- Detector (models, windows, Kafka group): `rrcf-detector/config/baselines.yaml`
+- Evaluation parameters: command-line options of `rrcf-detector/scripts/evaluate_thesis.py` (`--help`)
 
-Edit `price-feed-simulator/config/simulator-with-anomalies.yaml`:
+### Complete documentation
 
-```yaml
-anomaly:
-  enabled: true
-  seed: 42  # For reproducibility
-  
-  phase1_tick_rate_decline:
-    enabled: true
-    date_filter: ["08-11-2021"]
-    window: {start: "09:30:00", end: "14:00:00"}
-    initial_rate: 1.0  # 100%
-    final_rate: 0.3    # 30%
-    instrument_ratio: 0.4  # 40% of instruments affected
-```
-
-#### Detection Settings
-
-Edit `rrcf-detector/config/baselines.yaml`:
-
-```yaml
-models:
-  - rrcf
-  - zscore
-  - isoforest
-  - halfspace
-  - onlineiforest
-
-detector:
-  window_size: 1000
-  min_fill_threshold: 50
-```
-
-#### Evaluation Thresholds
-
-Edit `rrcf-detector/scripts/evaluate_thesis.py`:
-
-```python
-# Phase-specific detection windows (milliseconds)
-DETECTION_WINDOWS = {
-    1: 120_000,  # Phase 1: 2 minutes
-    2: 30_000,   # Phase 2: 30 seconds
-    3: 10_000,   # Phase 3: 10 seconds
-    4: 5_000,    # Phase 4: 5 seconds
-}
-
-# Alert threshold (Z-score)
-alert_threshold = 2.0  # Default: 2 standard deviations
-```
-
-### Advanced Usage
-
-#### Run Experiment Only
-
-```bash
-make run-thesis-experiment
-```
-
-Generates ground truth and model predictions without evaluation.
-
-#### Evaluate Existing Data
-
-If you already have ground truth and scores:
-
-```bash
-cd rrcf-detector
-./venv/bin/python3 scripts/evaluate_thesis.py \
-    --ground-truth-csv ../price-feed-simulator/anomaly_log.csv \
-    --ground-truth-manifest ../price-feed-simulator/injection_manifest.json \
-    --scores ../data/scores.parquet \
-    --output ../results/custom_run
-```
-
-#### Custom Experiment Run
-
-```bash
-# 1. Clean previous data
-rm -f price-feed-simulator/anomaly_log.csv data/scores.parquet
-
-# 2. Start infrastructure
-make kafka-up
-
-# 3. Run with custom duration/config
-make run-handler
-cd rrcf-detector
-./venv/bin/python3 scripts/run_multi_model.py \
-    --config config/baselines.yaml \
-    --output ../data/scores.parquet &
-
-cd ../price-feed-simulator
-./bin/simulator -config config/simulator-with-anomalies.yaml
-
-# 4. Stop and evaluate
-make stop-all
-make evaluate-thesis
-```
-
-### Interpreting Results
-
-#### RQ1 Results (Phase Detection)
-
-Example `rq1_results.json`:
-```json
-{
-  "phase1": {
-    "precision": 0.92,
-    "recall": 0.88,
-    "f1": 0.90,
-    "avg_latency_ms": 45320,
-    "total_injections": 1234,
-    "total_detections": 1150
-  },
-  ...
-}
-```
-
-- **Precision**: What % of detections were correct?
-- **Recall**: What % of injections were detected?
-- **F1**: Harmonic mean (overall performance)
-- **Latency**: How fast did detection occur?
-
-#### RQ2 Results (Model Comparison)
-
-Example `rq2_results.json`:
-```json
-{
-  "rrcf": {
-    "overall": {
-      "f1": 0.90,
-      "precision": 0.92,
-      "recall": 0.88
-    },
-    "per_phase": {
-      "phase1": {"f1": 0.90},
-      "phase2": {"f1": 0.89},
-      ...
-    }
-  },
-  "zscore": {...},
-  ...
-}
-```
-
-Shows comparative performance across all models.
-
-### LaTeX Integration
-
-The generated tables are ready for direct inclusion in your thesis:
-
-```latex
-% In your thesis .tex file
-\input{results/thesis_20260918_235900/tables/table_rq1_phase_detection.tex}
-\input{results/thesis_20260918_235900/tables/table_rq2_model_comparison.tex}
-
-% Include figures
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.8\textwidth]{results/thesis_20260918_235900/figures/fig_rq1_heatmap.pdf}
-  \caption{Detection performance across four phases}
-  \label{fig:rq1-heatmap}
-\end{figure}
-```
-
-### Testing the Evaluation System
-
-Quick validation that everything works:
-
-```bash
-# Run integration test
-make test-thesis
-
-# Or manual test
-cd price-feed-simulator
-./bin/simulator -config config/simulator-with-anomalies.yaml &
-sleep 60 && pkill simulator
-
-# Check outputs
-ls -lh anomaly_log.csv injection_manifest.json
-```
-
-### Troubleshooting
-
-#### No Ground Truth Files Created
-
-**Issue**: `anomaly_log.csv` or `injection_manifest.json` not created
-
-**Solution**:
-- Files are created in simulator's working directory
-- Check `price-feed-simulator/anomaly_log.csv`
-- Manifest only created on clean shutdown (Ctrl+C)
-
-#### Python Import Takes Forever
-
-**Issue**: First detector startup pauses 10+ minutes
-
-**Solution**: 
-- This is normal for first import on some systems
-- Subsequent runs are much faster (imports cached)
-- Be patient on first run
-
-#### No Anomalies in Time Window
-
-**Issue**: Short runs may not reach injection windows
-
-**Solution**:
-- Phase 1 starts at 09:30:00 on day 08-11-2021
-- Run for at least 10-15 minutes to see injections
-- Check `injection_manifest.json` for statistics
-
-#### Evaluation Script Fails
-
-**Issue**: Missing columns or data mismatch
-
-**Solution**:
-```bash
-# Verify files exist and have data
-ls -lh price-feed-simulator/anomaly_log.csv
-wc -l price-feed-simulator/anomaly_log.csv
-
-ls -lh data/scores.parquet
-python3 -c "import pandas as pd; df = pd.read_parquet('data/scores.parquet'); print(len(df))"
-```
-
-### Performance Notes
-
-- **First run**: 10-15 minutes setup + experiment time
-- **Subsequent runs**: Much faster (Python imports cached)
-- **Dataset size**: Full DEBS 2022 dataset = ~30 minutes
-- **Simulator speed**: Configure in `simulator-with-anomalies.yaml`
-  - `mode: realtime` = matches original timing
-  - `mode: accelerated` + `acceleration_factor: 10` = 10x faster
-
-### Complete Documentation
-
-For detailed implementation and design decisions, see:
-- **`THESIS_EVALUATION.md`** - Complete evaluation system documentation
-- **`TEST_SUMMARY.md`** - Testing guide and validation
-- **`price-feed-simulator/ANOMALY_INJECTION.md`** - Injection details
-
+- `docs/EVALUATION_METHODOLOGY.md` - what is measured and why, the fixes made and the measurements behind them
+- `docs/dataset_profile/` - dataset profile
+- `price-feed-simulator/ANOMALY_INJECTION.md` - injection details
+- `feed-handler/test/integration/README.md` - integration test

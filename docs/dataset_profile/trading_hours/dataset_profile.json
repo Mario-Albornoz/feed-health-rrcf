@@ -1,0 +1,1480 @@
+{
+  "directory": "price-feed-simulator/data/trading_hours",
+  "days": [
+    {
+      "file": "debs2022-gc-trading-day-08-11-21.csv",
+      "seconds": 152.0,
+      "rows": 37416831,
+      "rows_equity": 30736003,
+      "rows_index": 6680828,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 0,
+      "dates_in_file": {
+        "08-11-2021": 30736003
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2807,
+      "by_exchange": {
+        "ETR": {
+          "rows": 3037915,
+          "trade": 760972,
+          "bid_only": 724019,
+          "ask_only": 721535,
+          "bid_and_ask": 607781,
+          "other": 223608,
+          "trade_share_pct": 25.049153778166932,
+          "instruments": 1575
+        },
+        "FR": {
+          "rows": 18031786,
+          "trade": 374195,
+          "bid_only": 2700987,
+          "ask_only": 2729000,
+          "bid_and_ask": 1574,
+          "other": 12226030,
+          "trade_share_pct": 2.075196544590758,
+          "instruments": 1038
+        },
+        "NL": {
+          "rows": 9666302,
+          "trade": 206693,
+          "bid_only": 1490191,
+          "ask_only": 1459147,
+          "bid_and_ask": 63,
+          "other": 6510208,
+          "trade_share_pct": 2.138284113200684,
+          "instruments": 194
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.503845213705894,
+        "Last volume": 2.748314411603877,
+        "Bid": 17.97500800608329,
+        "Ask": 17.95706487925577,
+        "Bid volume": 17.971627605580334,
+        "Ask volume": 17.95300449443605,
+        "Total volume": 4.638543925181163,
+        "Trading time": 38.48252162130515,
+        "Trading date": 1.8904312314128808,
+        "ISIN": 0.0
+      },
+      "trades": 1341860,
+      "trades_pct_of_equity_rows": 4.365759594700716,
+      "trades_without_last_volume_pct": 37.064373332538416,
+      "currency": {},
+      "isin_present_rows": 0,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.01016397610320379,
+        "trading_time_present_pct": 38.48252162130515,
+        "trading_time_exactly_midnight_rows": 201,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 201
+        },
+        "event_time_midnight_rows": 201,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "11": 44,
+          "10": 30,
+          "15": 29,
+          "13": 27,
+          "14": 26,
+          "12": 23,
+          "9": 22
+        },
+        "system_time_hour_rows": {
+          "9": 3100749,
+          "10": 5573799,
+          "11": 4416780,
+          "12": 3712602,
+          "13": 3812942,
+          "14": 3749225,
+          "15": 6223015,
+          "16": 146891
+        },
+        "event_first_hhmm": "09:29:59",
+        "event_last_hhmm": "17:31:03"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 46,
+            "trades": 0
+          },
+          "9": {
+            "rows": 257699,
+            "trades": 67155
+          },
+          "10": {
+            "rows": 497767,
+            "trades": 128624
+          },
+          "11": {
+            "rows": 402755,
+            "trades": 115955
+          },
+          "12": {
+            "rows": 367735,
+            "trades": 109669
+          },
+          "13": {
+            "rows": 374325,
+            "trades": 108651
+          },
+          "14": {
+            "rows": 369161,
+            "trades": 105376
+          },
+          "15": {
+            "rows": 750370,
+            "trades": 123132
+          },
+          "16": {
+            "rows": 17860,
+            "trades": 2226
+          },
+          "17": {
+            "rows": 197,
+            "trades": 184
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 126,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1888302,
+            "trades": 38340
+          },
+          "10": {
+            "rows": 3401294,
+            "trades": 69065
+          },
+          "11": {
+            "rows": 2646228,
+            "trades": 55883
+          },
+          "12": {
+            "rows": 2195111,
+            "trades": 49155
+          },
+          "13": {
+            "rows": 2250172,
+            "trades": 46085
+          },
+          "14": {
+            "rows": 2178613,
+            "trades": 45508
+          },
+          "15": {
+            "rows": 3395191,
+            "trades": 68915
+          },
+          "16": {
+            "rows": 76749,
+            "trades": 1244
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 29,
+            "trades": 0
+          },
+          "9": {
+            "rows": 954729,
+            "trades": 21637
+          },
+          "10": {
+            "rows": 1674687,
+            "trades": 35486
+          },
+          "11": {
+            "rows": 1367735,
+            "trades": 29661
+          },
+          "12": {
+            "rows": 1149720,
+            "trades": 26329
+          },
+          "13": {
+            "rows": 1188378,
+            "trades": 24127
+          },
+          "14": {
+            "rows": 1201401,
+            "trades": 25409
+          },
+          "15": {
+            "rows": 2077419,
+            "trades": 43037
+          },
+          "16": {
+            "rows": 52204,
+            "trades": 1007
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 33.0726097688307,
+        "per_instrument_backward_steps_pct": 29.155327678904595,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 0,
+          "[1,10)": 220169,
+          "[10,100)": 896723,
+          "[100,500)": 3685215,
+          "[500,1000)": 4158235,
+          "[1000,5000)": 14,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 0,
+          "[3.6e+06,8.64e+07)": 8,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 21772832,
+        "identical_timestamp_pct": 41.51760322221749,
+        "p50": 177.82794100389228,
+        "p90": 1995.262314968881,
+        "p99": 25118.864315095823,
+        "p99.9": 316227.7660168379
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 8912.509381337459,
+        "p90": 15848.93192461114,
+        "p99": 398107.17055349774,
+        "p99.9": 3548133.8923357604
+      },
+      "trade_price": {
+        "min": 0.0005,
+        "max": 8725.4833,
+        "consecutive_trade_pairs": 1339886,
+        "same_price_as_previous_trade_pct": 49.06424874952048,
+        "abs_relative_change_between_trades": {
+          "p50": 5.623413251903491e-06,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01584893192461114,
+          "p99.99": 0.07943282347242822
+        },
+        "changes_over_10_pct": 112
+      },
+      "bid_ask_rows_with_both_sides": 609602,
+      "crossed_quotes_on_those_rows": 24,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 5.0,
+        "q0.25": 35.0,
+        "q0.5": 727.0,
+        "q0.75": 2151.0,
+        "q0.9": 13828.4,
+        "q0.99": 282180.78000000055,
+        "q1": 1015249.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 0.0,
+        "q0.5": 10.0,
+        "q0.75": 290.0,
+        "q0.9": 1564.0,
+        "q0.99": 6509.160000000001,
+        "q1": 18336.0
+      },
+      "instruments_without_any_trade": 833,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 880,
+        "100-999": 643,
+        "1k-9,999": 947,
+        "10k-99,999": 267,
+        ">=100k": 70
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-09-11-21.csv",
+      "seconds": 160.6,
+      "rows": 39555876,
+      "rows_equity": 32851137,
+      "rows_index": 6704739,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 0,
+      "dates_in_file": {
+        "09-11-2021": 32851137
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2807,
+      "by_exchange": {
+        "ETR": {
+          "rows": 3132731,
+          "trade": 787226,
+          "bid_only": 745256,
+          "ask_only": 734470,
+          "bid_and_ask": 625580,
+          "other": 240199,
+          "trade_share_pct": 25.12906470424687,
+          "instruments": 1575
+        },
+        "FR": {
+          "rows": 19664756,
+          "trade": 425170,
+          "bid_only": 2938811,
+          "ask_only": 2888964,
+          "bid_and_ask": 3896,
+          "other": 13407915,
+          "trade_share_pct": 2.1620914086093923,
+          "instruments": 1038
+        },
+        "NL": {
+          "rows": 10053650,
+          "trade": 218457,
+          "bid_only": 1512091,
+          "ask_only": 1502260,
+          "bid_and_ask": 788,
+          "other": 6820054,
+          "trade_share_pct": 2.1729123253743667,
+          "instruments": 194
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.4847458399993885,
+        "Last volume": 2.842589588299486,
+        "Bid": 17.73643938107835,
+        "Ask": 17.521944522041963,
+        "Bid volume": 17.72600747426185,
+        "Ask volume": 17.51192355990601,
+        "Total volume": 4.802211259841631,
+        "Trading time": 37.865718315929215,
+        "Trading date": 1.9596947283742416,
+        "ISIN": 0.0
+      },
+      "trades": 1430853,
+      "trades_pct_of_equity_rows": 4.355566140678784,
+      "trades_without_last_volume_pct": 34.751228812463616,
+      "currency": {},
+      "isin_present_rows": 0,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.010011830031940751,
+        "trading_time_present_pct": 37.865718315929215,
+        "trading_time_exactly_midnight_rows": 193,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 193
+        },
+        "event_time_midnight_rows": 193,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "11": 44,
+          "10": 31,
+          "15": 30,
+          "9": 24,
+          "13": 24,
+          "14": 21,
+          "12": 19
+        },
+        "system_time_hour_rows": {
+          "9": 2866993,
+          "10": 5116088,
+          "11": 4947186,
+          "12": 4454756,
+          "13": 3924858,
+          "14": 4297566,
+          "15": 7003151,
+          "16": 240539
+        },
+        "event_first_hhmm": "09:29:59",
+        "event_last_hhmm": "17:31:04"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 38,
+            "trades": 0
+          },
+          "9": {
+            "rows": 235996,
+            "trades": 65719
+          },
+          "10": {
+            "rows": 459608,
+            "trades": 120565
+          },
+          "11": {
+            "rows": 451817,
+            "trades": 129456
+          },
+          "12": {
+            "rows": 408098,
+            "trades": 119659
+          },
+          "13": {
+            "rows": 380486,
+            "trades": 106206
+          },
+          "14": {
+            "rows": 397442,
+            "trades": 109624
+          },
+          "15": {
+            "rows": 775590,
+            "trades": 133036
+          },
+          "16": {
+            "rows": 23440,
+            "trades": 2761
+          },
+          "17": {
+            "rows": 216,
+            "trades": 200
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 127,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1757858,
+            "trades": 38945
+          },
+          "10": {
+            "rows": 3181257,
+            "trades": 68687
+          },
+          "11": {
+            "rows": 3026862,
+            "trades": 69623
+          },
+          "12": {
+            "rows": 2685092,
+            "trades": 65448
+          },
+          "13": {
+            "rows": 2354618,
+            "trades": 45356
+          },
+          "14": {
+            "rows": 2590833,
+            "trades": 52909
+          },
+          "15": {
+            "rows": 3938962,
+            "trades": 82091
+          },
+          "16": {
+            "rows": 129147,
+            "trades": 2111
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 28,
+            "trades": 0
+          },
+          "9": {
+            "rows": 873120,
+            "trades": 18542
+          },
+          "10": {
+            "rows": 1475183,
+            "trades": 30765
+          },
+          "11": {
+            "rows": 1468421,
+            "trades": 36549
+          },
+          "12": {
+            "rows": 1361535,
+            "trades": 35062
+          },
+          "13": {
+            "rows": 1189703,
+            "trades": 22531
+          },
+          "14": {
+            "rows": 1309237,
+            "trades": 25808
+          },
+          "15": {
+            "rows": 2288864,
+            "trades": 47876
+          },
+          "16": {
+            "rows": 87559,
+            "trades": 1324
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.588866942074695,
+        "per_instrument_backward_steps_pct": 28.8573026391296,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 0,
+          "[1,10)": 268640,
+          "[10,100)": 947880,
+          "[100,500)": 3666585,
+          "[500,1000)": 4595676,
+          "[1000,5000)": 353,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 0,
+          "[3.6e+06,8.64e+07)": 8,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 23369188,
+        "identical_timestamp_pct": 42.53365157574153,
+        "p50": 141.2537544622754,
+        "p90": 1778.2794100389228,
+        "p99": 22387.211385683422,
+        "p99.9": 281838.2931264455
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 4466.835921509635,
+        "p90": 15848.93192461114,
+        "p99": 354813.389233576,
+        "p99.9": 3162277.6601683795
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 8679.3579,
+        "consecutive_trade_pairs": 1428886,
+        "same_price_as_previous_trade_pct": 51.43979295759074,
+        "abs_relative_change_between_trades": {
+          "p50": 0.0,
+          "p90": 0.0003548133892335757,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.11220184543019653
+        },
+        "changes_over_10_pct": 146
+      },
+      "bid_ask_rows_with_both_sides": 630464,
+      "crossed_quotes_on_those_rows": 20,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 5.0,
+        "q0.25": 36.0,
+        "q0.5": 698.0,
+        "q0.75": 2137.0,
+        "q0.9": 14917.000000000005,
+        "q0.99": 278197.5600000003,
+        "q1": 854749.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 0.0,
+        "q0.5": 10.0,
+        "q0.75": 259.5,
+        "q0.9": 1564.0,
+        "q0.99": 7060.180000000002,
+        "q1": 21742.0
+      },
+      "instruments_without_any_trade": 840,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 911,
+        "100-999": 605,
+        "1k-9,999": 946,
+        "10k-99,999": 272,
+        ">=100k": 73
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-10-11-21.csv",
+      "seconds": 192.9,
+      "rows": 47289266,
+      "rows_equity": 40588343,
+      "rows_index": 6700923,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 0,
+      "dates_in_file": {
+        "10-11-2021": 40588343
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2812,
+      "by_exchange": {
+        "ETR": {
+          "rows": 3484079,
+          "trade": 804753,
+          "bid_only": 847073,
+          "ask_only": 839747,
+          "bid_and_ask": 731740,
+          "other": 260766,
+          "trade_share_pct": 23.09801241590676,
+          "instruments": 1576
+        },
+        "FR": {
+          "rows": 23753474,
+          "trade": 498857,
+          "bid_only": 3535018,
+          "ask_only": 3440372,
+          "bid_and_ask": 3754,
+          "other": 16275473,
+          "trade_share_pct": 2.1001433306134505,
+          "instruments": 1040
+        },
+        "NL": {
+          "rows": 13350790,
+          "trade": 280059,
+          "bid_only": 2011255,
+          "ask_only": 1964358,
+          "bid_and_ask": 435,
+          "other": 9094683,
+          "trade_share_pct": 2.0976960913923444,
+          "instruments": 196
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.006305455731464,
+        "Last volume": 2.67690898344877,
+        "Bid": 17.565294547747367,
+        "Ask": 17.198516825385063,
+        "Bid volume": 17.55795992952952,
+        "Ask volume": 17.190625397050578,
+        "Total volume": 4.59624084678697,
+        "Trading time": 36.98282041225482,
+        "Trading date": 1.9194476601323684,
+        "ISIN": 0.0
+      },
+      "trades": 1583669,
+      "trades_pct_of_equity_rows": 3.9017828345443912,
+      "trades_without_last_volume_pct": 31.405047393110554,
+      "currency": {},
+      "isin_present_rows": 0,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.00783968934134611,
+        "trading_time_present_pct": 36.98282041225482,
+        "trading_time_exactly_midnight_rows": 186,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 186
+        },
+        "event_time_midnight_rows": 186,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "11": 46,
+          "15": 29,
+          "10": 27,
+          "9": 25,
+          "13": 22,
+          "12": 19,
+          "14": 18
+        },
+        "system_time_hour_rows": {
+          "9": 3457266,
+          "10": 7161993,
+          "11": 6055098,
+          "12": 5627324,
+          "13": 4831648,
+          "14": 5814372,
+          "15": 7522564,
+          "16": 118078
+        },
+        "event_first_hhmm": "09:29:59",
+        "event_last_hhmm": "17:31:04"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 30,
+            "trades": 0
+          },
+          "9": {
+            "rows": 265177,
+            "trades": 68896
+          },
+          "10": {
+            "rows": 556324,
+            "trades": 134657
+          },
+          "11": {
+            "rows": 480997,
+            "trades": 122799
+          },
+          "12": {
+            "rows": 456738,
+            "trades": 118020
+          },
+          "13": {
+            "rows": 415065,
+            "trades": 111094
+          },
+          "14": {
+            "rows": 499953,
+            "trades": 118065
+          },
+          "15": {
+            "rows": 791886,
+            "trades": 128366
+          },
+          "16": {
+            "rows": 17712,
+            "trades": 2669
+          },
+          "17": {
+            "rows": 197,
+            "trades": 187
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 128,
+            "trades": 0
+          },
+          "9": {
+            "rows": 2070108,
+            "trades": 48908
+          },
+          "10": {
+            "rows": 4327869,
+            "trades": 84296
+          },
+          "11": {
+            "rows": 3606684,
+            "trades": 82340
+          },
+          "12": {
+            "rows": 3339025,
+            "trades": 73155
+          },
+          "13": {
+            "rows": 2854113,
+            "trades": 57035
+          },
+          "14": {
+            "rows": 3353117,
+            "trades": 70441
+          },
+          "15": {
+            "rows": 4135200,
+            "trades": 80970
+          },
+          "16": {
+            "rows": 67230,
+            "trades": 1712
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 28,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1121975,
+            "trades": 26486
+          },
+          "10": {
+            "rows": 2277739,
+            "trades": 47645
+          },
+          "11": {
+            "rows": 1967340,
+            "trades": 43822
+          },
+          "12": {
+            "rows": 1831541,
+            "trades": 40699
+          },
+          "13": {
+            "rows": 1562417,
+            "trades": 31833
+          },
+          "14": {
+            "rows": 1961247,
+            "trades": 38949
+          },
+          "15": {
+            "rows": 2595410,
+            "trades": 49917
+          },
+          "16": {
+            "rows": 33093,
+            "trades": 708
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.29349698492242,
+        "per_instrument_backward_steps_pct": 28.837634279073495,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 0,
+          "[1,10)": 277605,
+          "[10,100)": 1148162,
+          "[100,500)": 4715686,
+          "[500,1000)": 5562245,
+          "[1000,5000)": 201,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 0,
+          "[3.6e+06,8.64e+07)": 8,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 28881624,
+        "identical_timestamp_pct": 44.26251446248313,
+        "p50": 112.20184543019641,
+        "p90": 1258.9254117941675,
+        "p99": 17782.794100389227,
+        "p99.9": 223872.11385683424
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 2238.72113856834,
+        "p90": 15848.93192461114,
+        "p99": 316227.7660168379,
+        "p99.9": 2818382.931264455
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 8675.2908,
+        "consecutive_trade_pairs": 1581712,
+        "same_price_as_previous_trade_pct": 49.72529765216424,
+        "abs_relative_change_between_trades": {
+          "p50": 2.5118864315095823e-06,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01778279410038923,
+          "p99.99": 0.08912509381337459
+        },
+        "changes_over_10_pct": 123
+      },
+      "bid_ask_rows_with_both_sides": 736116,
+      "crossed_quotes_on_those_rows": 15,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 5.0,
+        "q0.25": 36.0,
+        "q0.5": 749.0,
+        "q0.75": 2353.0,
+        "q0.9": 17462.600000000002,
+        "q0.99": 338012.3099999994,
+        "q1": 1242793.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 0.0,
+        "q0.5": 10.5,
+        "q0.75": 270.25,
+        "q0.9": 1564.0,
+        "q0.99": 9639.649999999989,
+        "q1": 31730.0
+      },
+      "instruments_without_any_trade": 855,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 887,
+        "100-999": 605,
+        "1k-9,999": 952,
+        "10k-99,999": 279,
+        ">=100k": 89
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-11-11-21.csv",
+      "seconds": 133.2,
+      "rows": 39545417,
+      "rows_equity": 32857182,
+      "rows_index": 6688235,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 0,
+      "dates_in_file": {
+        "11-11-2021": 32857182
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2811,
+      "by_exchange": {
+        "ETR": {
+          "rows": 3139560,
+          "trade": 788114,
+          "bid_only": 744735,
+          "ask_only": 744836,
+          "bid_and_ask": 618104,
+          "other": 243771,
+          "trade_share_pct": 25.10268954885398,
+          "instruments": 1575
+        },
+        "FR": {
+          "rows": 19195973,
+          "trade": 378941,
+          "bid_only": 2850256,
+          "ask_only": 2817474,
+          "bid_and_ask": 1855,
+          "other": 13147447,
+          "trade_share_pct": 1.974065081254282,
+          "instruments": 1040
+        },
+        "NL": {
+          "rows": 10521649,
+          "trade": 221910,
+          "bid_only": 1553653,
+          "ask_only": 1586043,
+          "bid_and_ask": 145,
+          "other": 7159898,
+          "trade_share_pct": 2.1090800500948093,
+          "instruments": 196
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.3564052449781,
+        "Last volume": 2.714207201335769,
+        "Bid": 17.557586040093152,
+        "Ask": 17.55670038897432,
+        "Bid volume": 17.55396734875194,
+        "Ask volume": 17.551730394895095,
+        "Total volume": 4.5430158922332415,
+        "Trading time": 37.609993455920836,
+        "Trading date": 1.8291465165819758,
+        "ISIN": 0.0
+      },
+      "trades": 1388965,
+      "trades_pct_of_equity_rows": 4.227279746631954,
+      "trades_without_last_volume_pct": 35.8073817554798,
+      "currency": {},
+      "isin_present_rows": 0,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.023659971813772707,
+        "trading_time_present_pct": 37.609993455920836,
+        "trading_time_exactly_midnight_rows": 189,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 189
+        },
+        "event_time_midnight_rows": 189,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "11": 47,
+          "10": 31,
+          "15": 28,
+          "14": 22,
+          "9": 22,
+          "12": 19,
+          "13": 20
+        },
+        "system_time_hour_rows": {
+          "9": 2755900,
+          "10": 5860143,
+          "11": 5028707,
+          "12": 4764427,
+          "13": 3905110,
+          "14": 4134402,
+          "15": 6287485,
+          "16": 121008
+        },
+        "event_first_hhmm": "09:29:59",
+        "event_last_hhmm": "17:31:03"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 34,
+            "trades": 0
+          },
+          "9": {
+            "rows": 261375,
+            "trades": 70625
+          },
+          "10": {
+            "rows": 522115,
+            "trades": 131714
+          },
+          "11": {
+            "rows": 450920,
+            "trades": 121607
+          },
+          "12": {
+            "rows": 420303,
+            "trades": 113941
+          },
+          "13": {
+            "rows": 372469,
+            "trades": 106964
+          },
+          "14": {
+            "rows": 384642,
+            "trades": 112432
+          },
+          "15": {
+            "rows": 712719,
+            "trades": 128439
+          },
+          "16": {
+            "rows": 14793,
+            "trades": 2212
+          },
+          "17": {
+            "rows": 190,
+            "trades": 180
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 127,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1600651,
+            "trades": 30846
+          },
+          "10": {
+            "rows": 3454169,
+            "trades": 60646
+          },
+          "11": {
+            "rows": 2985249,
+            "trades": 60239
+          },
+          "12": {
+            "rows": 2855723,
+            "trades": 59484
+          },
+          "13": {
+            "rows": 2242414,
+            "trades": 42312
+          },
+          "14": {
+            "rows": 2469409,
+            "trades": 53006
+          },
+          "15": {
+            "rows": 3518206,
+            "trades": 70965
+          },
+          "16": {
+            "rows": 70025,
+            "trades": 1443
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 28,
+            "trades": 0
+          },
+          "9": {
+            "rows": 893876,
+            "trades": 20201
+          },
+          "10": {
+            "rows": 1883795,
+            "trades": 35979
+          },
+          "11": {
+            "rows": 1592484,
+            "trades": 33548
+          },
+          "12": {
+            "rows": 1488346,
+            "trades": 34243
+          },
+          "13": {
+            "rows": 1290182,
+            "trades": 26014
+          },
+          "14": {
+            "rows": 1280298,
+            "trades": 26157
+          },
+          "15": {
+            "rows": 2056487,
+            "trades": 45046
+          },
+          "16": {
+            "rows": 36153,
+            "trades": 722
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 32.359069391862924,
+        "per_instrument_backward_steps_pct": 28.6244956569097,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 0,
+          "[1,10)": 235177,
+          "[10,100)": 936813,
+          "[100,500)": 3625386,
+          "[500,1000)": 4606982,
+          "[1000,5000)": 31,
+          "[5000,60000)": 0,
+          "[60000,3.6e+06)": 0,
+          "[3.6e+06,8.64e+07)": 9,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 23449973,
+        "identical_timestamp_pct": 42.965976975751744,
+        "p50": 141.2537544622754,
+        "p90": 1778.2794100389228,
+        "p99": 22387.211385683422,
+        "p99.9": 316227.7660168379
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 5623.413251903491,
+        "p90": 15848.93192461114,
+        "p99": 316227.7660168379,
+        "p99.9": 3548133.8923357604
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 8668.4354,
+        "consecutive_trade_pairs": 1387037,
+        "same_price_as_previous_trade_pct": 49.211736961595115,
+        "abs_relative_change_between_trades": {
+          "p50": 5.623413251903491e-06,
+          "p90": 0.00039810717055349735,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01584893192461114,
+          "p99.99": 0.06309573444801943
+        },
+        "changes_over_10_pct": 60
+      },
+      "bid_ask_rows_with_both_sides": 620284,
+      "crossed_quotes_on_those_rows": 17,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 7.0,
+        "q0.25": 34.0,
+        "q0.5": 662.0,
+        "q0.75": 1959.0,
+        "q0.9": 14219.0,
+        "q0.99": 289282.8000000011,
+        "q1": 928327.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 0.0,
+        "q0.5": 8.0,
+        "q0.75": 225.5,
+        "q0.9": 1564.0,
+        "q0.99": 7443.1,
+        "q1": 19214.0
+      },
+      "instruments_without_any_trade": 883,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 920,
+        "100-999": 635,
+        "1k-9,999": 908,
+        "10k-99,999": 270,
+        ">=100k": 78
+      }
+    },
+    {
+      "file": "debs2022-gc-trading-day-12-11-21.csv",
+      "seconds": 129.6,
+      "rows": 39173692,
+      "rows_equity": 32489639,
+      "rows_index": 6684053,
+      "rows_other_sectype": 0,
+      "malformed_rows_skipped": 0,
+      "dates_in_file": {
+        "12-11-2021": 32489639
+      },
+      "trading_date_differs_from_date": 0,
+      "equity_instruments": 2811,
+      "by_exchange": {
+        "ETR": {
+          "rows": 3101473,
+          "trade": 742226,
+          "bid_only": 774149,
+          "ask_only": 755498,
+          "bid_and_ask": 609200,
+          "other": 220400,
+          "trade_share_pct": 23.931402917258993,
+          "instruments": 1575
+        },
+        "FR": {
+          "rows": 18480080,
+          "trade": 386952,
+          "bid_only": 2683940,
+          "ask_only": 2642292,
+          "bid_and_ask": 1780,
+          "other": 12765116,
+          "trade_share_pct": 2.0938870394500455,
+          "instruments": 1040
+        },
+        "NL": {
+          "rows": 10908086,
+          "trade": 222194,
+          "bid_only": 1599662,
+          "ask_only": 1619396,
+          "bid_and_ask": 78,
+          "other": 7466756,
+          "trade_share_pct": 2.0369659718487734,
+          "instruments": 196
+        }
+      },
+      "field_presence_pct_of_equity_rows": {
+        "Last": 4.289986109110046,
+        "Last volume": 2.6292104999997075,
+        "Bid": 17.44856260175744,
+        "Ask": 17.32370741330798,
+        "Bid volume": 17.44525385462116,
+        "Ask volume": 17.319213673011262,
+        "Total volume": 4.504331365454692,
+        "Trading time": 37.21311584902498,
+        "Trading date": 1.8753640198956967,
+        "ISIN": 0.0
+      },
+      "trades": 1351372,
+      "trades_pct_of_equity_rows": 4.159393707021491,
+      "trades_without_last_volume_pct": 36.80348564273938,
+      "currency": {},
+      "isin_present_rows": 0,
+      "time": {
+        "time_column_has_milliseconds_pct": 0.010030890155473872,
+        "trading_time_present_pct": 37.21311584902498,
+        "trading_time_exactly_midnight_rows": 191,
+        "trading_time_exactly_midnight_by_kind": {
+          "bid_and_ask": 191
+        },
+        "event_time_midnight_rows": 191,
+        "event_time_midnight_by_hour_of_Time_column": {
+          "11": 44,
+          "10": 32,
+          "15": 31,
+          "9": 22,
+          "13": 22,
+          "14": 20,
+          "12": 20
+        },
+        "system_time_hour_rows": {
+          "9": 3357492,
+          "10": 5821986,
+          "11": 5197959,
+          "12": 4228951,
+          "13": 3851306,
+          "14": 3877053,
+          "15": 6049741,
+          "16": 105151
+        },
+        "event_first_hhmm": "09:29:59",
+        "event_last_hhmm": "17:31:03"
+      },
+      "intraday_profile_by_event_hour": {
+        "ETR": {
+          "0": {
+            "rows": 38,
+            "trades": 0
+          },
+          "9": {
+            "rows": 270050,
+            "trades": 65374
+          },
+          "10": {
+            "rows": 495367,
+            "trades": 118965
+          },
+          "11": {
+            "rows": 459026,
+            "trades": 119591
+          },
+          "12": {
+            "rows": 404235,
+            "trades": 108297
+          },
+          "13": {
+            "rows": 375457,
+            "trades": 103452
+          },
+          "14": {
+            "rows": 368119,
+            "trades": 104224
+          },
+          "15": {
+            "rows": 711452,
+            "trades": 119971
+          },
+          "16": {
+            "rows": 17553,
+            "trades": 2186
+          },
+          "17": {
+            "rows": 176,
+            "trades": 166
+          }
+        },
+        "FR": {
+          "0": {
+            "rows": 126,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1965840,
+            "trades": 41353
+          },
+          "10": {
+            "rows": 3374316,
+            "trades": 63030
+          },
+          "11": {
+            "rows": 2926414,
+            "trades": 68372
+          },
+          "12": {
+            "rows": 2435338,
+            "trades": 47744
+          },
+          "13": {
+            "rows": 2213757,
+            "trades": 46106
+          },
+          "14": {
+            "rows": 2205549,
+            "trades": 49730
+          },
+          "15": {
+            "rows": 3304526,
+            "trades": 69444
+          },
+          "16": {
+            "rows": 54214,
+            "trades": 1173
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        },
+        "NL": {
+          "0": {
+            "rows": 27,
+            "trades": 0
+          },
+          "9": {
+            "rows": 1121585,
+            "trades": 25199
+          },
+          "10": {
+            "rows": 1952261,
+            "trades": 37730
+          },
+          "11": {
+            "rows": 1812464,
+            "trades": 39243
+          },
+          "12": {
+            "rows": 1389339,
+            "trades": 27896
+          },
+          "13": {
+            "rows": 1262026,
+            "trades": 24087
+          },
+          "14": {
+            "rows": 1303337,
+            "trades": 26000
+          },
+          "15": {
+            "rows": 2033726,
+            "trades": 41342
+          },
+          "16": {
+            "rows": 33321,
+            "trades": 697
+          },
+          "17": {
+            "rows": 0,
+            "trades": 0
+          }
+        }
+      },
+      "ordering": {
+        "file_order_backward_steps_pct": 31.973701892277163,
+        "per_instrument_backward_steps_pct": 28.1489931857921,
+        "per_instrument_backward_magnitude_ms": {
+          "[0,1)": 0,
+          "[1,10)": 228476,
+          "[10,100)": 969840,
+          "[100,500)": 3696586,
+          "[500,1000)": 4249770,
+          "[1000,5000)": 33,
+          "[5000,60000)": 1,
+          "[60000,3.6e+06)": 0,
+          "[3.6e+06,8.64e+07)": 9,
+          "[8.64e+07,inf)": 0
+        }
+      },
+      "inter_arrival_ms_per_instrument": {
+        "pairs": 23342113,
+        "identical_timestamp_pct": 43.61662973699082,
+        "p50": 125.89254117941675,
+        "p90": 1778.2794100389228,
+        "p99": 22387.211385683422,
+        "p99.9": 281838.2931264455
+      },
+      "inter_arrival_ms_between_trades": {
+        "p50": 7079.457843841381,
+        "p90": 15848.93192461114,
+        "p99": 354813.389233576,
+        "p99.9": 3162277.6601683795
+      },
+      "trade_price": {
+        "min": 0.0006,
+        "max": 18600.0,
+        "consecutive_trade_pairs": 1349452,
+        "same_price_as_previous_trade_pct": 49.099486309998426,
+        "abs_relative_change_between_trades": {
+          "p50": 5.623413251903491e-06,
+          "p90": 0.0003548133892335757,
+          "p99": 0.0031622776601683794,
+          "p99.9": 0.01584893192461114,
+          "p99.99": 0.07079457843841387
+        },
+        "changes_over_10_pct": 98
+      },
+      "bid_ask_rows_with_both_sides": 611224,
+      "crossed_quotes_on_those_rows": 29,
+      "rows_per_instrument": {
+        "q0": 1.0,
+        "q0.1": 5.0,
+        "q0.25": 34.5,
+        "q0.5": 641.0,
+        "q0.75": 2042.0,
+        "q0.9": 14562.0,
+        "q0.99": 262995.0000000005,
+        "q1": 869644.0
+      },
+      "trades_per_instrument": {
+        "q0": 0.0,
+        "q0.1": 0.0,
+        "q0.25": 0.0,
+        "q0.5": 8.0,
+        "q0.75": 243.5,
+        "q0.9": 1564.0,
+        "q0.99": 7260.500000000009,
+        "q1": 18069.0
+      },
+      "instruments_without_any_trade": 891,
+      "instrument_liquidity_tiers_by_rows": {
+        "<100": 898,
+        "100-999": 644,
+        "1k-9,999": 917,
+        "10k-99,999": 276,
+        ">=100k": 76
+      }
+    }
+  ]
+}

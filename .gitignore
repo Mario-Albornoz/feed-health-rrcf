@@ -168,3 +168,9 @@ config/override.yaml
 # Documentation build artifacts
 docs/_build/
 site/
+
+# Smoke-run output (scripts/smoke_run.py)
+results/smoke_*/
+# Thesis runs: the archived inputs hold the (large) scores file and logs; keep them local
+results/latest
+results/thesis_*/inputs/
