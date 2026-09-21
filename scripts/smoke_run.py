@@ -8,6 +8,11 @@ Runs the actual simulator, Kafka, feed-handler and RRCF detector on a slice of o
 on what came out. It answers "does the whole chain work, and where does it not?" in a few
 minutes, before committing to a multi-day run.
 
+It also checks the sampled-vector recording: the live detector records the vectors that pass
+the stride (rrcf and zscore run live), then the recording is replayed through the same models
+in a separate run, which must score exactly the same rows (and, for the deterministic zscore,
+the same scores) as the live run. This is what makes models run in separate passes comparable.
+
 Needs Kafka on localhost:9092 (make kafka-up) and the detector venv:
 
     rrcf-detector/venv/bin/python scripts/smoke_run.py [--rows 600000] [--keep-topics]
@@ -178,7 +183,7 @@ def write_configs(work: Path, topics: dict, span: tuple, day: str, ids: dict) ->
     d = yaml.safe_load((DETECTOR / "config/baselines.yaml").read_text())
     d["kafka"].update(input_topic=topics["vectors"], output_topic=topics["scores"], consumer_group_id=ids["detector"],
                       auto_offset_reset="earliest")
-    d["models"] = ["rrcf"]
+    d["models"] = ["rrcf", "zscore"]  # zscore is deterministic: its replay must equal its live scores
     (work / "detector").mkdir(parents=True, exist_ok=True)
     (work / "detector" / "baselines.yaml").write_text(yaml.safe_dump(d, sort_keys=False))
     return {"windows": {k: (hms(s), hms(e)) for k, (s, e) in windows.items()}}
@@ -240,6 +245,67 @@ def wait_stable(fn, quiet_seconds: float, timeout: float, what: str) -> int:
     return last or 0
 
 
+def check_sample_and_replay(work: Path, topics: dict, models: list) -> list:
+    """Check the recorded vector sample, then replay it through `models` in a separate run
+    and compare with the live scores. Returns [(check, passed, detail), ...]."""
+    import numpy as np
+    import pyarrow.parquet as pq
+
+    results = []
+
+    def check(name: str, ok: bool, detail: str = "") -> bool:
+        results.append((name, bool(ok), detail))
+        log(f"  {'PASS' if ok else 'FAIL'}: {name}" + (f" ({detail})" if detail else ""))
+        return ok
+
+    sample = work / "detector/vectors_sample.parquet"
+    if not check("vector sample was recorded and closed", sample.exists(), str(sample)):
+        return results
+
+    stride = 10
+    n_vectors = end_offsets(topics["vectors"])
+    rows = pq.ParquetFile(sample).metadata.num_rows
+    check("sample holds one vector in ten", rows == n_vectors // stride,
+          f"{rows:,} rows for {n_vectors:,} vectors on the topic")
+    sys.path.insert(0, str(DETECTOR / "scripts"))
+    import check_vector_sample
+
+    summary_file = sample.with_suffix(".summary.json")
+    for desc, ok, detail in check_vector_sample.check(str(sample)):
+        check(f"sample vs the runner's summary: {desc}", ok, detail)
+    if summary_file.exists():
+        summary = json.loads(summary_file.read_text())
+        check("the runner consumed every vector on the topic", summary["consumed"] == n_vectors,
+              f"runner consumed {summary['consumed']:,}, topic holds {n_vectors:,}")
+    idx = pq.read_table(sample, columns=["stream_index"]).column("stream_index").to_numpy()
+    check("stream_index is every 10th position, in order",
+          len(idx) > 0 and idx[0] == stride and bool(np.all(np.diff(idx) == stride)))
+
+    log("replaying the sample through the same models in a separate run...")
+    replay_dir = work / "replay"
+    replay_dir.mkdir(exist_ok=True)
+    r = subprocess.run(
+        [str(DETECTOR / "venv/bin/python"), "-u", "scripts/run_multi_model.py", "--config",
+         str(work / "detector/baselines.yaml"), "--from-file", str(sample), "--models", ",".join(models),
+         "--output", str(replay_dir / "scores.parquet")],
+        cwd=DETECTOR, env=dict(os.environ, PYTHONPATH=str(DETECTOR)),
+        stdout=open(work / "logs/replay.log", "w"), stderr=subprocess.STDOUT)
+    if not check("replay run exited cleanly", r.returncode == 0, f"exit {r.returncode}; see logs/replay.log"):
+        return results
+
+    cols = ["exchange", "instrument", "timestamp_ms", "seq"]
+    for m in models:
+        live = pq.read_table(work / f"detector/scores_{m}.parquet").to_pandas()
+        rep = pq.read_table(replay_dir / f"scores_{m}.parquet").to_pandas()
+        check(f"{m}: replay scores exactly the rows the live run scored",
+              live[cols].reset_index(drop=True).equals(rep[cols].reset_index(drop=True)),
+              f"live {len(live):,} rows, replay {len(rep):,} rows")
+        if m == "zscore":  # deterministic model: the scores themselves must match
+            check("zscore: replay scores equal the live scores",
+                  np.array_equal(live["z_score"].to_numpy(), rep["z_score"].to_numpy()))
+    return results
+
+
 # ------------------------------------------------------------------------------ main
 
 
@@ -289,7 +355,8 @@ def main() -> int:
         dlog = work / "logs" / "detector.log"
         env = dict(os.environ, PYTHONPATH=str(DETECTOR))
         detector = subprocess.Popen([str(DETECTOR / "venv/bin/python"), "-u", "scripts/run_multi_model.py", "--config",
-                                     str(work / "detector/baselines.yaml"), "--output", str(work / "detector/scores.parquet")],
+                                     str(work / "detector/baselines.yaml"), "--output", str(work / "detector/scores.parquet"),
+                                     "--record", str(work / "detector/vectors_sample.parquet")],
                                     cwd=DETECTOR, env=env, stdout=open(dlog, "w"), stderr=subprocess.STDOUT)
         procs.append(detector)
         time.sleep(8)
@@ -315,7 +382,13 @@ def main() -> int:
         log("waiting for the detector to drain...")
         # run_multi_model.py consumes with group.id = <consumer_group_id>-multi
         wait_lag(ids["detector"] + "-multi", topics["vectors"], 300)
-        stop(detector, "the detector", timeout=60)
+        stop(detector, "the detector", timeout=180)
+
+        log("checking the recorded vector sample and its replay...")
+        sample_checks = check_sample_and_replay(work, topics, ["rrcf", "zscore"])
+        (work / "sample_check.json").write_text(json.dumps(
+            [{"check": c, "passed": ok, "detail": d} for c, ok, d in sample_checks], indent=2))
+        sample_ok = all(ok for _, ok, _ in sample_checks)
 
         # ------------------------------------------------------------- verify and evaluate
         log("verifying the run...")
@@ -349,8 +422,9 @@ def main() -> int:
         except SystemExit as e:
             log(f"evaluation stopped: {e}")
 
-        log(f"done. Verifier exit status {rc}. Everything is in {work}")
-        return rc
+        log(f"done. Verifier exit status {rc}; vector sample/replay checks "
+            f"{'passed' if sample_ok else 'FAILED (see sample_check.json)'}. Everything is in {work}")
+        return rc or (0 if sample_ok else 1)
     finally:
         for p in procs:
             stop(p, "process", timeout=10)

@@ -5,7 +5,7 @@
         run-all stop-all status logs \
         test test-integration test-thesis test-simulator-completion test-stop-all test-stop-all-real test-archive-run clean-all \
         kafka-reset drain integration-test smoke-run describe-dataset \
-        run-thesis-experiment archive-run verify-run evaluate-thesis compare-models thesis-full
+        run-thesis-experiment archive-run verify-run evaluate-thesis compare-models replay-models thesis-full
 
 # Default target
 .DEFAULT_GOAL := help
@@ -46,6 +46,8 @@ LOGS_DIR := $(PROJECT_ROOT)/logs
 # evaluation settings. Override on the command line, e.g.
 #   make evaluate-thesis RUN_DIR=results/thesis_20260921_101500 TARGET_FAR=0.5
 PY := $(DETECTOR_DIR)/venv/bin/python3
+# cross-checks an archived vector sample against the runner's own summary of the run
+CHECK_SAMPLE := $(DETECTOR_DIR)/scripts/check_vector_sample.py
 RESULTS_DIR := results
 RUN_STAMP := $(shell date +%Y%m%d_%H%M%S)
 NEW_RUN_DIR := $(RESULTS_DIR)/thesis_$(RUN_STAMP)
@@ -419,6 +421,7 @@ clean-output-files: ## Clean output files from previous runs (scores, ground tru
 	@rm -f ./rrcf-detector/data/scores_onlineiforest.parquet
 	@rm -f ./rrcf-detector/data/scores_isoforest.parquet
 	@rm -f ./rrcf-detector/data/scores_halfspace.parquet
+	@rm -rf ./rrcf-detector/data/vectors
 	@rm -f ./price-feed-simulator/anomaly_log.csv
 	@rm -f ./price-feed-simulator/anomaly_log_episodes.csv
 	@rm -f ./price-feed-simulator/anomaly_log_instruments.csv
@@ -510,7 +513,7 @@ run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(GREEN)  Experiment complete: $(NEW_RUN_DIR)$(NC)"
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo "Next: make evaluate-thesis   (uses $(RESULTS_DIR)/latest)"
+	@echo "Next: make evaluate-thesis   (uses $(RESULTS_DIR)/latest); more models on the same vectors: make replay-models MODELS=rrcf"
 	@echo ""
 
 drain: ## Wait until the handler and detector have processed everything the simulator published
@@ -560,9 +563,9 @@ drain: ## Wait until the handler and detector have processed everything the simu
 # long after the run, uncommitted-file counts may differ from what was used.
 archive-run: ## Copy the last run's outputs, logs, configs and git revisions into ARCHIVE_DIR/inputs (default: new results/thesis_<stamp>)
 	@echo "$(YELLOW)Archiving the run to $(ARCHIVE_DIR)/inputs ...$(NC)"
-	@for f in $(DETECTOR_DIR)/data/*.parquet; do \
+	@for f in $(DETECTOR_DIR)/data/*.parquet $(DETECTOR_DIR)/data/vectors/*.parquet; do \
 		[ -f "$$f" ] || continue; \
-		a=$(ARCHIVE_DIR)/inputs/$$(basename $$f); \
+		a=$(ARCHIVE_DIR)/inputs/$${f#$(DETECTOR_DIR)/data/}; \
 		if [ -f "$$a" ] && [ "$$(stat -f %z $$a)" != "$$(stat -f %z $$f)" ] && [ "$(FORCE)" != "1" ]; then \
 			echo "$(RED)✗ $$a already holds a different scores file (another run?). Not overwriting; pass FORCE=1 to override.$(NC)"; exit 1; \
 		fi; \
@@ -582,6 +585,22 @@ archive-run: ## Copy the last run's outputs, logs, configs and git revisions int
 			|| { echo "$(RED)✗ could not copy $$f$(NC)"; MISSING=1; }; \
 	done; \
 	[ $$N -gt 0 ] || { echo "$(RED)✗ scores file missing: no .parquet in $(DETECTOR_DIR)/data$(NC)"; MISSING=1; }; \
+	if [ -f $(DETECTOR_DIR)/data/vectors/vectors_sample.parquet ]; then \
+		mkdir -p $(ARCHIVE_DIR)/inputs/vectors && cp $(DETECTOR_DIR)/data/vectors/vectors_sample.parquet $(ARCHIVE_DIR)/inputs/vectors/ \
+			&& echo "  vector sample archived (more models can be replayed on it: make replay-models)" \
+			|| { echo "$(RED)✗ could not copy the vector sample$(NC)"; MISSING=1; }; \
+		cp $(DETECTOR_DIR)/data/vectors/vectors_sample.summary.json $(ARCHIVE_DIR)/inputs/vectors/ 2>/dev/null \
+			|| echo "$(YELLOW)  note: no vectors_sample.summary.json next to the sample$(NC)"; \
+		if [ -x $(PY) ] && [ -f $(CHECK_SAMPLE) ]; then \
+			echo "  checking the archived sample against the runner's summary:"; \
+			$(PY) $(CHECK_SAMPLE) $(ARCHIVE_DIR)/inputs/vectors/vectors_sample.parquet \
+				|| { echo "$(RED)✗ the archived vector sample does not match what the runner reported$(NC)"; MISSING=1; }; \
+		else \
+			echo "$(YELLOW)  note: sample not cross-checked ($(PY) or $(CHECK_SAMPLE) not found)$(NC)"; \
+		fi; \
+	else \
+		echo "$(YELLOW)  note: no vector sample in $(DETECTOR_DIR)/data/vectors (run not recorded: more models cannot be replayed on the same vectors)$(NC)"; \
+	fi; \
 	cp $(LOGS_DIR)/*.log $(ARCHIVE_DIR)/inputs/logs/ 2>/dev/null || true; \
 	cp $(SIMULATOR_DIR)/config/simulator-with-anomalies.yaml $(HANDLER_DIR)/config/aggregator.yaml $(DETECTOR_DIR)/config/baselines.yaml $(ARCHIVE_DIR)/inputs/config/ \
 		|| { echo "$(RED)✗ config files missing$(NC)"; MISSING=1; }; \
@@ -653,6 +672,24 @@ evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=
 
 compare-models: ## Side-by-side table of every evaluated model (RUN_DIR=..., default results/latest) -> evaluation/comparison.{csv,md}
 	@python3 scripts/compare_models.py $(RUN_DIR) $(if $(MODELS),--models $(MODELS))
+
+# Score the vector sample recorded during a run with more models, one model (or a few) per
+# invocation, e.g. after a run that used zscore + isoforest live:
+#     make replay-models MODELS=rrcf                     (RUN_DIR defaults to results/latest)
+# The runner recorded the vectors that passed the stride (rrcf-detector/data/vectors/, archived
+# to <run>/inputs/vectors/vectors_sample.parquet by archive-run), so every model scores exactly
+# the same vectors, whichever run it is in. Scores land next to the others as
+# <run>/inputs/scores_<model>.parquet, where evaluate-thesis picks them up. An existing
+# scores file is never overwritten unless FORCE=1.
+replay-models: ## Score an archived run's recorded vectors with more models (MODELS=rrcf[,...], RUN_DIR=..., FORCE=1)
+	@if [ -z "$(MODELS)" ]; then echo "$(RED)✗ MODELS is required, e.g. make replay-models MODELS=rrcf$(NC)"; exit 1; fi
+	@if [ ! -f $(RUN_DIR)/inputs/vectors/vectors_sample.parquet ]; then echo "$(RED)✗ $(RUN_DIR)/inputs/vectors/vectors_sample.parquet not found (was that run recorded, and archived with archive-run?)$(NC)"; exit 1; fi
+	@echo "$(BLUE)Replaying $(RUN_DIR)/inputs/vectors/vectors_sample.parquet through: $(MODELS)$(NC)"
+	@CAF=""; command -v caffeinate > /dev/null 2>&1 && CAF="caffeinate -i"; \
+	cd $(DETECTOR_DIR) && PYTHONPATH=. $$CAF ./venv/bin/python3 -u scripts/run_multi_model.py --config config/baselines.yaml \
+		--from-file ../$(RUN_DIR)/inputs/vectors/vectors_sample.parquet --models $(MODELS) \
+		--output ../$(RUN_DIR)/inputs/scores.parquet $(if $(filter 1,$(FORCE)),--overwrite)
+	@echo "$(GREEN)✓ Replay done: scores in $(RUN_DIR)/inputs/scores_<model>.parquet; next: make evaluate-thesis MODEL=<model>$(NC)"
 
 thesis-full: run-thesis-experiment evaluate-thesis ## Complete workflow: run + verify + evaluate
 	@echo ""
