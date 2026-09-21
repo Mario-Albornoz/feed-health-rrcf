@@ -5,7 +5,7 @@
         run-all stop-all status logs \
         test test-integration test-thesis test-simulator-completion test-stop-all test-stop-all-real test-archive-run clean-all \
         kafka-reset drain integration-test smoke-run describe-dataset \
-        run-thesis-experiment archive-run verify-run evaluate-thesis thesis-full
+        run-thesis-experiment archive-run verify-run evaluate-thesis compare-models thesis-full
 
 # Default target
 .DEFAULT_GOAL := help
@@ -65,7 +65,7 @@ DETECTOR_GROUP := rrcf-detector-baselines-multi
 DRAIN_TIMEOUT ?= 21600
 # alert threshold is picked on the clean days at this many alerts per 1000 scored vectors
 TARGET_FAR ?= 1.0
-THRESHOLDS ?= 1,1.5,2,3,4,5
+THRESHOLDS ?= 1,1.5,2,3,3.5,4,4.5,5,6,7,8,9,10,12,15,20
 
 ##@ Help
 
@@ -505,7 +505,7 @@ run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/
 	@$(MAKE) archive-run ARCHIVE_DIR=$(NEW_RUN_DIR) \
 		|| echo "$(RED)✗ Archiving failed; the outputs are still in the module data/ directories. Fix the cause and run: make archive-run ARCHIVE_DIR=$(NEW_RUN_DIR)$(NC)"
 	@echo ""
-	@$(MAKE) verify-run RUN_DIR=$(NEW_RUN_DIR) || echo "$(RED)✗ The verifier reported FAILED checks: read $(NEW_RUN_DIR)/verify.txt before evaluating$(NC)"
+	@$(MAKE) verify-run RUN_DIR=$(NEW_RUN_DIR) || echo "$(RED)✗ The verifier reported FAILED checks: read $(NEW_RUN_DIR)/verify_*.txt before evaluating$(NC)"
 	@echo ""
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(GREEN)  Experiment complete: $(NEW_RUN_DIR)$(NC)"
@@ -516,7 +516,7 @@ run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/
 drain: ## Wait until the handler and detector have processed everything the simulator published
 	@# Run after the simulator has finished and BEFORE stop-all: stopping earlier throws away the
 	@# unprocessed tail. Three stages: handler has consumed raw-ticks; detector has consumed
-	@# normalized-vectors (and no new vectors appear); the scores file has stopped growing.
+	@# normalized-vectors (and no new vectors appear); no scores file (any model) is still growing.
 	@T0=$$(date +%s); \
 	state() { $(KAFKA_EXEC) kafka-consumer-groups --bootstrap-server $(KAFKA_BS) --describe --group $$1 2>/dev/null \
 		| awk -v t=$$2 '$$2==t {n++; lag+=($$6=="-")?$$5:$$6; end+=$$5} END {if (n==0) print "-1 -1"; else print lag, end}'; }; \
@@ -539,13 +539,13 @@ drain: ## Wait until the handler and detector have processed everything the simu
 		set -- $$(state $(DETECTOR_GROUP) normalized-vectors); \
 	done; \
 	echo "$(GREEN)  detector done$(NC); waiting for the scores file to settle..."; \
-	F=$(DETECTOR_DIR)/data/scores_rrcf.parquet; STABLE=0; PREV=-1; \
+	STABLE=0; PREV=-1; \
 	while [ $$STABLE -lt 3 ]; do \
-		late; SZ=$$(stat -f %z $$F 2>/dev/null || echo 0); \
+		late; SZ=$$(stat -f %z $(DETECTOR_DIR)/data/*.parquet 2>/dev/null | paste -sd+ - | bc); SZ=$${SZ:-0}; \
 		if [ "$$SZ" = "$$PREV" ]; then STABLE=$$((STABLE+1)); else STABLE=0; fi; \
 		PREV=$$SZ; sleep 10; \
 	done; \
-	[ "$$PREV" -gt 0 ] || { echo "$(RED)✗ the detector wrote no scores to $$F (logs/detector-multi.log)$(NC)"; exit 1; }; \
+	[ "$$PREV" -gt 0 ] || { echo "$(RED)✗ the detector wrote no scores to $(DETECTOR_DIR)/data (logs/detector-multi.log)$(NC)"; exit 1; }; \
 	echo "$(GREEN)✓ Everything the simulator published has been processed$(NC)"
 
 # Copy a finished run's raw outputs from the module directories into ARCHIVE_DIR/inputs: the
@@ -560,11 +560,13 @@ drain: ## Wait until the handler and detector have processed everything the simu
 # long after the run, uncommitted-file counts may differ from what was used.
 archive-run: ## Copy the last run's outputs, logs, configs and git revisions into ARCHIVE_DIR/inputs (default: new results/thesis_<stamp>)
 	@echo "$(YELLOW)Archiving the run to $(ARCHIVE_DIR)/inputs ...$(NC)"
-	@if [ -f $(ARCHIVE_DIR)/inputs/scores_rrcf.parquet ] && [ -f $(DETECTOR_DIR)/data/scores_rrcf.parquet ] \
-		&& [ "$$(stat -f %z $(ARCHIVE_DIR)/inputs/scores_rrcf.parquet)" != "$$(stat -f %z $(DETECTOR_DIR)/data/scores_rrcf.parquet)" ] \
-		&& [ "$(FORCE)" != "1" ]; then \
-		echo "$(RED)✗ $(ARCHIVE_DIR)/inputs already holds a different scores file (another run?). Not overwriting; pass FORCE=1 to override.$(NC)"; exit 1; \
-	fi
+	@for f in $(DETECTOR_DIR)/data/*.parquet; do \
+		[ -f "$$f" ] || continue; \
+		a=$(ARCHIVE_DIR)/inputs/$$(basename $$f); \
+		if [ -f "$$a" ] && [ "$$(stat -f %z $$a)" != "$$(stat -f %z $$f)" ] && [ "$(FORCE)" != "1" ]; then \
+			echo "$(RED)✗ $$a already holds a different scores file (another run?). Not overwriting; pass FORCE=1 to override.$(NC)"; exit 1; \
+		fi; \
+	done
 	@mkdir -p $(ARCHIVE_DIR)/inputs/logs $(ARCHIVE_DIR)/inputs/config
 	@MISSING=0; \
 	cp $(SIMULATOR_DIR)/anomaly_log.csv $(SIMULATOR_DIR)/anomaly_log_episodes.csv $(SIMULATOR_DIR)/anomaly_log_instruments.csv $(ARCHIVE_DIR)/inputs/ \
@@ -573,8 +575,13 @@ archive-run: ## Copy the last run's outputs, logs, configs and git revisions int
 		|| { echo "$(RED)✗ manifest missing$(NC)"; MISSING=1; }; \
 	cp $(HANDLER_DIR)/data/eval/*.csv $(ARCHIVE_DIR)/inputs/ \
 		|| { echo "$(RED)✗ handler alert logs missing$(NC)"; MISSING=1; }; \
-	cp $(DETECTOR_DIR)/data/scores_rrcf.parquet $(ARCHIVE_DIR)/inputs/ \
-		|| { echo "$(RED)✗ scores file missing$(NC)"; MISSING=1; }; \
+	N=0; \
+	for f in $(DETECTOR_DIR)/data/*.parquet; do \
+		[ -f "$$f" ] || continue; \
+		cp "$$f" $(ARCHIVE_DIR)/inputs/ && { N=$$((N+1)); echo "  scores archived: $$(basename $$f)"; } \
+			|| { echo "$(RED)✗ could not copy $$f$(NC)"; MISSING=1; }; \
+	done; \
+	[ $$N -gt 0 ] || { echo "$(RED)✗ scores file missing: no .parquet in $(DETECTOR_DIR)/data$(NC)"; MISSING=1; }; \
 	cp $(LOGS_DIR)/*.log $(ARCHIVE_DIR)/inputs/logs/ 2>/dev/null || true; \
 	cp $(SIMULATOR_DIR)/config/simulator-with-anomalies.yaml $(HANDLER_DIR)/config/aggregator.yaml $(DETECTOR_DIR)/config/baselines.yaml $(ARCHIVE_DIR)/inputs/config/ \
 		|| { echo "$(RED)✗ config files missing$(NC)"; MISSING=1; }; \
@@ -587,38 +594,65 @@ archive-run: ## Copy the last run's outputs, logs, configs and git revisions int
 	fi; \
 	echo "$(GREEN)✓ Archived; $(RESULTS_DIR)/latest -> $(notdir $(ARCHIVE_DIR))$(NC)"
 
-verify-run: ## Stage-by-stage PASS/WARN/FAIL report on an archived run (RUN_DIR=..., default results/latest)
+# archive-run, drain, verify-run and evaluate-thesis are model-agnostic: they work on every
+# *.parquet the detector wrote to its data/ dir (scores_<model>.parquet -> model "<model>").
+# MODEL=<name> restricts verify-run / evaluate-thesis to one model. A failure on one model does
+# not stop the others; the target exits 1 at the end if any model failed.
+# Still hardcoded / not covered (PROPOSAL, not active): clean-output-files only deletes the five
+# known scores_*.parquet names (a new detector's file would survive into the next run:
+# `rm -f ./rrcf-detector/data/*.parquet` would cover it), and test-run/test_archive_run.sh seeds
+# only scores_rrcf.parquet.
+
+verify-run: ## PASS/WARN/FAIL report per model on an archived run (RUN_DIR=..., MODEL=... optional)
 	@echo "$(BLUE)Verifying $(RUN_DIR) against the live Kafka topics...$(NC)"
 	@if [ ! -d $(RUN_DIR)/inputs ]; then echo "$(RED)✗ $(RUN_DIR)/inputs not found (run make run-thesis-experiment first)$(NC)"; exit 1; fi
-	@cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/verify_run.py \
-		--manifest ../$(RUN_DIR)/inputs/injection_manifest.json \
-		--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
-		--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
-		--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
-		--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
-		--scores ../$(RUN_DIR)/inputs/scores_rrcf.parquet \
-		--kafka localhost:9092 \
-		--json ../$(RUN_DIR)/verify.json > ../$(RUN_DIR)/verify.txt 2>&1; \
-		STATUS=$$?; cat ../$(RUN_DIR)/verify.txt; exit $$STATUS
+	@STATUS=0; N=0; \
+	for s in $(RUN_DIR)/inputs/$(if $(MODEL),scores_$(MODEL),*).parquet; do \
+		[ -f "$$s" ] || continue; N=$$((N+1)); \
+		m=$$(basename $$s .parquet); m=$${m#scores_}; \
+		echo "$(BLUE)── model: $$m ──$(NC)"; \
+		( cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/verify_run.py \
+			--manifest ../$(RUN_DIR)/inputs/injection_manifest.json \
+			--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
+			--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
+			--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
+			--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
+			--scores ../$$s \
+			--kafka localhost:9092 \
+			--json ../$(RUN_DIR)/verify_$$m.json > ../$(RUN_DIR)/verify_$$m.txt 2>&1 ); \
+		RC=$$?; cat $(RUN_DIR)/verify_$$m.txt; [ $$RC -eq 0 ] || STATUS=1; \
+	done; \
+	[ $$N -gt 0 ] || { echo "$(RED)✗ no scores parquet in $(RUN_DIR)/inputs$(if $(MODEL), (MODEL=$(MODEL)))$(NC)"; exit 1; }; \
+	exit $$STATUS
 
-evaluate-thesis: ## Evaluate an archived run (RUN_DIR=..., default results/latest; TARGET_FAR, THRESHOLDS)
+evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=... optional; TARGET_FAR, THRESHOLDS)
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(BLUE)  Thesis Evaluation: RQ1 + RQ2   ($(RUN_DIR))$(NC)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo ""
 	@if [ ! -d $(RUN_DIR)/inputs ]; then echo "$(RED)✗ $(RUN_DIR)/inputs not found (run make run-thesis-experiment first)$(NC)"; exit 1; fi
 	@# the alert threshold is picked on the clean days (--target-far), never on the injected data
-	@cd $(DETECTOR_DIR) && \
-		./venv/bin/python3 scripts/evaluate_thesis.py \
-		--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
-		--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
-		--scores ../$(RUN_DIR)/inputs/scores_rrcf.parquet \
-		--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
-		--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
-		--thresholds $(THRESHOLDS) --target-far $(TARGET_FAR) \
-		--output ../$(RUN_DIR)/evaluation
+	@STATUS=0; N=0; \
+	for s in $(RUN_DIR)/inputs/$(if $(MODEL),scores_$(MODEL),*).parquet; do \
+		[ -f "$$s" ] || continue; N=$$((N+1)); \
+		m=$$(basename $$s .parquet); m=$${m#scores_}; \
+		echo "$(BLUE)── evaluating model: $$m ──$(NC)"; \
+		( cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/evaluate_thesis.py \
+			--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
+			--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
+			--scores ../$$s --method-name $$m \
+			--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
+			--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
+			--thresholds $(THRESHOLDS) --target-far $(TARGET_FAR) \
+			--output ../$(RUN_DIR)/evaluation/$$m ) || { echo "$(RED)✗ evaluation of $$m failed$(NC)"; STATUS=1; }; \
+	done; \
+	[ $$N -gt 0 ] || { echo "$(RED)✗ no scores parquet in $(RUN_DIR)/inputs$(if $(MODEL), (MODEL=$(MODEL)))$(NC)"; exit 1; }; \
+	exit $$STATUS
 	@echo ""
-	@echo "$(GREEN)✓ Evaluation complete: $(RUN_DIR)/evaluation$(NC)"
+	@echo "$(GREEN)✓ Evaluation complete: $(RUN_DIR)/evaluation/<model>  (compare models: make compare-models)$(NC)"
+
+compare-models: ## Side-by-side table of every evaluated model (RUN_DIR=..., default results/latest) -> evaluation/comparison.{csv,md}
+	@python3 scripts/compare_models.py $(RUN_DIR) $(if $(MODELS),--models $(MODELS))
 
 thesis-full: run-thesis-experiment evaluate-thesis ## Complete workflow: run + verify + evaluate
 	@echo ""

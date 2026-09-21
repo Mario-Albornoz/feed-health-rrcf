@@ -1,0 +1,1510 @@
+{
+  "method": "isoforest",
+  "operating_threshold": 4.0,
+  "alert_rule": "z_score >= threshold (one-sided)",
+  "inputs": {
+    "episodes": {
+      "path": "../results/latest/inputs/anomaly_log_episodes.csv",
+      "bytes": 7042958,
+      "sha256": "c3201aef6fafc0ba8cdd5bb30ef5ddd40e3e82dc07d967a9eacb6ffe2421bbaa",
+      "rows": 49041
+    },
+    "scores": {
+      "path": "../results/latest/inputs/scores_isoforest.parquet",
+      "bytes": 850580687,
+      "sha256": "cb68949ca673f12d6c0a259574e72f0475c8ef2d9db88619dde282b9673fc875",
+      "rows": 16043362
+    },
+    "silence_log": {
+      "path": "../results/latest/inputs/silence_alerts.csv",
+      "bytes": 161493122,
+      "sha256": "7293e7b15f3a5d47606c113f4505164083d735246d6ce1c5daae5e1e433c4e13",
+      "rows": 1435189
+    },
+    "validation_log": {
+      "path": "../results/latest/inputs/validation_alerts.csv",
+      "bytes": 3200037,
+      "sha256": "bf98ef8096e3bb4846a9d97331749eb0ef79f5c469c45a02596f80f81ca86714",
+      "rows": 29229
+    },
+    "instruments": {
+      "path": "../results/latest/inputs/anomaly_log_instruments.csv",
+      "bytes": 470757,
+      "sha256": "c3bac2aff71aa17110f930dd20f811437b5e39a47328cb0e07376e4923ba4e2e",
+      "rows": 14048
+    }
+  },
+  "data_checks": {
+    "episode_instruments_present_in_scores": 0.9848993288590604,
+    "episodes_by_phase": {
+      "1": 1139,
+      "2": 11248,
+      "3": 936,
+      "4": 35718
+    }
+  },
+  "parameters": {
+    "instruments": "../results/latest/inputs/anomaly_log_instruments.csv",
+    "method_name": "isoforest",
+    "alert_threshold": 2.0,
+    "thresholds": [
+      1.0,
+      1.5,
+      2.0,
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      12.0,
+      15.0,
+      20.0
+    ],
+    "target_far": 1.0,
+    "mult_thresholds": [
+      1,
+      2,
+      3,
+      5,
+      10
+    ],
+    "include_flush": false,
+    "match_tol_ms": 2,
+    "point_window_ms": 5000,
+    "stale_window_ms": 5000,
+    "cluster_gap_ms": 5000,
+    "min_observations": 50,
+    "validator_tolerance_ms": 1000,
+    "warmup_days": 1,
+    "clean_days": null,
+    "bootstrap": 1000,
+    "seed": 0,
+    "archive_inputs": false
+  },
+  "isoforest": {
+    "phase1": {
+      "affected": {
+        "episodes": 1139,
+        "scorable": 950,
+        "scorable_fraction": 0.8340649692712906,
+        "detected": 289,
+        "recall_scorable": 0.3042105263157895,
+        "recall_scorable_ci95": [
+          0.2736842105263158,
+          0.33263157894736844
+        ],
+        "recall_all": 0.2537313432835821,
+        "latency_ms": null,
+        "alerts_per_1000_vectors": 3.5115642519904218
+      },
+      "control_unaffected": {
+        "instruments": 1422,
+        "detection_rate": 0.12939521800281295,
+        "detection_rate_ci95": [
+          0.11181434599156118,
+          0.14699367088607593
+        ],
+        "alerts_per_1000_vectors": 0.4924013001243718
+      },
+      "detection_rate_difference_ci95": [
+        0.14112647124139463,
+        0.21060511510844623
+      ],
+      "by_messages_that_day": {
+        "<100": {
+          "affected_instruments": 356,
+          "affected_detection_rate": 0.0,
+          "control_instruments": 314,
+          "control_detection_rate": 0.0
+        },
+        "100-999": {
+          "affected_instruments": 234,
+          "affected_detection_rate": 0.030434782608695653,
+          "control_instruments": 366,
+          "control_detection_rate": 0.0273224043715847
+        },
+        "1k-9,999": {
+          "affected_instruments": 402,
+          "affected_detection_rate": 0.472636815920398,
+          "control_instruments": 544,
+          "control_detection_rate": 0.12316176470588236
+        },
+        "10k+": {
+          "affected_instruments": 147,
+          "affected_detection_rate": 0.6258503401360545,
+          "control_instruments": 198,
+          "control_detection_rate": 0.5404040404040404
+        }
+      },
+      "first_alert_delay_ms": {
+        "median": 3135000.0,
+        "p90": 10192636.799999995
+      },
+      "note": "A gradual decline has no sharp onset, so delay to the first alert mostly reflects the background alert rate; use the affected-vs-control difference."
+    },
+    "phase2": {
+      "point": {
+        "price_deviation": {
+          "label": "price_deviation",
+          "strict_matching": "message sequence number",
+          "strict_exact_tick": {
+            "episodes": 4342,
+            "scorable": 413,
+            "scorable_fraction": 0.0951174573929065,
+            "detected": 14,
+            "recall_scorable": 0.03389830508474576,
+            "recall_scorable_ci95": [
+              0.01707317073170732,
+              0.05198277640264026
+            ],
+            "recall_all": 0.0032243205895900505,
+            "latency_ms": null
+          },
+          "strict_by_trades_that_day": {
+            "1-19": {
+              "episodes": 7,
+              "scorable": 0,
+              "scorable_fraction": 0.0,
+              "detected": 0,
+              "recall_scorable": null,
+              "recall_scorable_ci95": null,
+              "recall_all": 0.0,
+              "latency_ms": null
+            },
+            "20-49": {
+              "episodes": 59,
+              "scorable": 7,
+              "scorable_fraction": 0.11864406779661017,
+              "detected": 0,
+              "recall_scorable": 0.0,
+              "recall_scorable_ci95": [
+                0.0,
+                0.0
+              ],
+              "recall_all": 0.0,
+              "latency_ms": null
+            },
+            "50-199": {
+              "episodes": 341,
+              "scorable": 39,
+              "scorable_fraction": 0.11436950146627566,
+              "detected": 3,
+              "recall_scorable": 0.07692307692307693,
+              "recall_scorable_ci95": [
+                0.0,
+                0.1668749999999998
+              ],
+              "recall_all": 0.008797653958944282,
+              "latency_ms": null
+            },
+            "200+": {
+              "episodes": 3935,
+              "scorable": 367,
+              "scorable_fraction": 0.09326556543837357,
+              "detected": 11,
+              "recall_scorable": 0.02997275204359673,
+              "recall_scorable_ci95": [
+                0.014122310036183585,
+                0.04815864022662889
+              ],
+              "recall_all": 0.0027954256670902162,
+              "latency_ms": null
+            }
+          },
+          "lenient_within_window": {
+            "episodes": 4342,
+            "scorable": 413,
+            "scorable_fraction": 0.0951174573929065,
+            "detected": 15,
+            "recall_scorable": 0.03631961259079903,
+            "recall_scorable_ci95": [
+              0.02025061378056946,
+              0.055440483110508275
+            ],
+            "recall_all": 0.003454629203132197,
+            "latency_ms": {
+              "median": 0.0,
+              "p90": 0.0
+            },
+            "window_ms": 5000
+          }
+        },
+        "price_spike": {
+          "label": "price_spike",
+          "strict_matching": "message sequence number",
+          "strict_exact_tick": {
+            "episodes": 5226,
+            "scorable": 502,
+            "scorable_fraction": 0.09605817068503636,
+            "detected": 83,
+            "recall_scorable": 0.16533864541832669,
+            "recall_scorable_ci95": [
+              0.12789756143489314,
+              0.20362995614611393
+            ],
+            "recall_all": 0.01588212782242633,
+            "latency_ms": null
+          },
+          "strict_by_trades_that_day": {
+            "1-19": {
+              "episodes": 297,
+              "scorable": 24,
+              "scorable_fraction": 0.08080808080808081,
+              "detected": 2,
+              "recall_scorable": 0.08333333333333333,
+              "recall_scorable_ci95": [
+                0.0,
+                0.20833333333333334
+              ],
+              "recall_all": 0.006734006734006734,
+              "latency_ms": null
+            },
+            "20-49": {
+              "episodes": 326,
+              "scorable": 28,
+              "scorable_fraction": 0.08588957055214724,
+              "detected": 7,
+              "recall_scorable": 0.25,
+              "recall_scorable_ci95": [
+                0.10344827586206896,
+                0.4289682539682536
+              ],
+              "recall_all": 0.02147239263803681,
+              "latency_ms": null
+            },
+            "50-199": {
+              "episodes": 513,
+              "scorable": 50,
+              "scorable_fraction": 0.09746588693957114,
+              "detected": 12,
+              "recall_scorable": 0.24,
+              "recall_scorable_ci95": [
+                0.11764705882352941,
+                0.3726692563817979
+              ],
+              "recall_all": 0.023391812865497075,
+              "latency_ms": null
+            },
+            "200+": {
+              "episodes": 4090,
+              "scorable": 400,
+              "scorable_fraction": 0.097799511002445,
+              "detected": 62,
+              "recall_scorable": 0.155,
+              "recall_scorable_ci95": [
+                0.1124992359413203,
+                0.2005280620088523
+              ],
+              "recall_all": 0.015158924205378973,
+              "latency_ms": null
+            }
+          },
+          "lenient_within_window": {
+            "episodes": 5226,
+            "scorable": 502,
+            "scorable_fraction": 0.09605817068503636,
+            "detected": 94,
+            "recall_scorable": 0.18725099601593626,
+            "recall_scorable_ci95": [
+              0.1501974405987466,
+              0.22512384271468097
+            ],
+            "recall_all": 0.017986988136241867,
+            "latency_ms": {
+              "median": 0.0,
+              "p90": 317.30000000000035
+            },
+            "window_ms": 5000
+          }
+        }
+      },
+      "stale_price": {
+        "episodes_total": 1680,
+        "episodes_effective": 1451,
+        "episodes": 1451,
+        "scorable": 1143,
+        "scorable_fraction": 0.7877325982081324,
+        "detected": 14,
+        "recall_scorable": 0.012248468941382326,
+        "recall_scorable_ci95": [
+          0.0055193994075099385,
+          0.019232456140350875
+        ],
+        "recall_all": 0.009648518263266712,
+        "latency_ms": {
+          "median": 96644.0,
+          "p90": 2287941.9000000004
+        },
+        "window_after_run_ms": 5000,
+        "by_trades_that_day": {
+          "1-19": {
+            "episodes": 43,
+            "scorable": 36,
+            "scorable_fraction": 0.8372093023255814,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "20-49": {
+            "episodes": 85,
+            "scorable": 70,
+            "scorable_fraction": 0.8235294117647058,
+            "detected": 2,
+            "recall_scorable": 0.02857142857142857,
+            "recall_scorable_ci95": [
+              0.0,
+              0.07352941176470588
+            ],
+            "recall_all": 0.023529411764705882,
+            "latency_ms": null
+          },
+          "50-199": {
+            "episodes": 158,
+            "scorable": 140,
+            "scorable_fraction": 0.8860759493670886,
+            "detected": 5,
+            "recall_scorable": 0.03571428571428571,
+            "recall_scorable_ci95": [
+              0.007750447227191413,
+              0.06896551724137931
+            ],
+            "recall_all": 0.03164556962025317,
+            "latency_ms": null
+          },
+          "200+": {
+            "episodes": 1165,
+            "scorable": 897,
+            "scorable_fraction": 0.7699570815450644,
+            "detected": 7,
+            "recall_scorable": 0.007803790412486065,
+            "recall_scorable_ci95": [
+              0.0022904951577631992,
+              0.014545759951135091
+            ],
+            "recall_all": 0.006008583690987125,
+            "latency_ms": null
+          }
+        }
+      }
+    },
+    "phase4_implausible_price": {
+      "label": "implausible_price",
+      "strict_matching": "message sequence number",
+      "strict_exact_tick": {
+        "episodes": 6919,
+        "scorable": 688,
+        "scorable_fraction": 0.09943633473045238,
+        "detected": 74,
+        "recall_scorable": 0.10755813953488372,
+        "recall_scorable_ci95": [
+          0.08298709887839968,
+          0.1322448474908004
+        ],
+        "recall_all": 0.0106951871657754,
+        "latency_ms": null
+      },
+      "strict_by_trades_that_day": {
+        "1-19": {
+          "episodes": 773,
+          "scorable": 80,
+          "scorable_fraction": 0.1034928848641656,
+          "detected": 14,
+          "recall_scorable": 0.175,
+          "recall_scorable_ci95": [
+            0.1,
+            0.25609756097560976
+          ],
+          "recall_all": 0.018111254851228976,
+          "latency_ms": null
+        },
+        "20-49": {
+          "episodes": 672,
+          "scorable": 73,
+          "scorable_fraction": 0.10863095238095238,
+          "detected": 12,
+          "recall_scorable": 0.1643835616438356,
+          "recall_scorable_ci95": [
+            0.08450704225352113,
+            0.2465753424657534
+          ],
+          "recall_all": 0.017857142857142856,
+          "latency_ms": null
+        },
+        "50-199": {
+          "episodes": 843,
+          "scorable": 72,
+          "scorable_fraction": 0.08540925266903915,
+          "detected": 16,
+          "recall_scorable": 0.2222222222222222,
+          "recall_scorable_ci95": [
+            0.12856227106227106,
+            0.32894736842105265
+          ],
+          "recall_all": 0.018979833926453145,
+          "latency_ms": null
+        },
+        "200+": {
+          "episodes": 4631,
+          "scorable": 463,
+          "scorable_fraction": 0.09997840639170806,
+          "detected": 32,
+          "recall_scorable": 0.06911447084233262,
+          "recall_scorable_ci95": [
+            0.0449113475177305,
+            0.09574689716312057
+          ],
+          "recall_all": 0.006909954653422587,
+          "latency_ms": null
+        }
+      },
+      "lenient_within_window": {
+        "episodes": 6919,
+        "scorable": 688,
+        "scorable_fraction": 0.09943633473045238,
+        "detected": 82,
+        "recall_scorable": 0.11918604651162791,
+        "recall_scorable_ci95": [
+          0.09321791073770094,
+          0.14499734263411393
+        ],
+        "recall_all": 0.011851423616129498,
+        "latency_ms": {
+          "median": 0.0,
+          "p90": 0.0
+        },
+        "window_ms": 5000
+      },
+      "not_evaluated_null_price_episodes": 0
+    },
+    "cluster_precision_at_injected_density": {
+      "phase1": {
+        "alerts": 2607,
+        "clusters": 2600,
+        "precision": 0.7553846153846154,
+        "alert_level_precision": 0.7548906789413119
+      },
+      "phase2": {
+        "alerts": 2513,
+        "clusters": 2427,
+        "precision": 0.11248454882571075,
+        "alert_level_precision": 0.11420612813370473
+      },
+      "phase4_implausible_price": {
+        "alerts": 2052,
+        "clusters": 1984,
+        "precision": 0.08669354838709678,
+        "alert_level_precision": 0.08576998050682261
+      }
+    }
+  },
+  "phase3_feed_silence": {
+    "episodes": 936,
+    "warm_episodes": 918,
+    "by_multiplier": {
+      "1": {
+        "episodes": 918,
+        "scorable": 918,
+        "scorable_fraction": 1.0,
+        "detected": 368,
+        "recall_scorable": 0.4008714596949891,
+        "recall_scorable_ci95": [
+          0.3671023965141612,
+          0.433578431372549
+        ],
+        "recall_all": 0.4008714596949891,
+        "latency_ms": {
+          "median": 36766.0,
+          "p90": 78780.40000000004
+        },
+        "recall_all_episodes": 0.39316239316239315,
+        "by_messages_that_day": {
+          "<100": {
+            "episodes": 60,
+            "scorable": 60,
+            "scorable_fraction": 1.0,
+            "detected": 7,
+            "recall_scorable": 0.11666666666666667,
+            "recall_scorable_ci95": [
+              0.05,
+              0.2
+            ],
+            "recall_all": 0.11666666666666667,
+            "latency_ms": null
+          },
+          "100-999": {
+            "episodes": 272,
+            "scorable": 272,
+            "scorable_fraction": 1.0,
+            "detected": 7,
+            "recall_scorable": 0.025735294117647058,
+            "recall_scorable_ci95": [
+              0.011029411764705883,
+              0.04411764705882353
+            ],
+            "recall_all": 0.025735294117647058,
+            "latency_ms": null
+          },
+          "1k-9,999": {
+            "episodes": 535,
+            "scorable": 535,
+            "scorable_fraction": 1.0,
+            "detected": 303,
+            "recall_scorable": 0.5663551401869159,
+            "recall_scorable_ci95": [
+              0.525233644859813,
+              0.6093457943925233
+            ],
+            "recall_all": 0.5663551401869159,
+            "latency_ms": null
+          },
+          "10k+": {
+            "episodes": 51,
+            "scorable": 51,
+            "scorable_fraction": 1.0,
+            "detected": 51,
+            "recall_scorable": 1.0,
+            "recall_scorable_ci95": [
+              1.0,
+              1.0
+            ],
+            "recall_all": 1.0,
+            "latency_ms": null
+          }
+        },
+        "latency_from_last_tick_ms": {
+          "median": 46339.0,
+          "p90": 110216.0
+        },
+        "latency_from_blackout_start_ms": {
+          "median": 36766.0,
+          "p90": 78780.40000000004
+        },
+        "alert_precision_in_scope": {
+          "alerts": 1378,
+          "matched_to_blackouts": 368,
+          "precision": 0.26705370101596515
+        },
+        "control_unaffected": {
+          "instruments": 1193,
+          "alert_rate": 0.6789606035205364
+        }
+      },
+      "2": {
+        "episodes": 918,
+        "scorable": 918,
+        "scorable_fraction": 1.0,
+        "detected": 14,
+        "recall_scorable": 0.015250544662309368,
+        "recall_scorable_ci95": [
+          0.008714596949891068,
+          0.023965141612200435
+        ],
+        "recall_all": 0.015250544662309368,
+        "latency_ms": {
+          "median": 12744.5,
+          "p90": 17508.200000000004
+        },
+        "recall_all_episodes": 0.014957264957264958,
+        "by_messages_that_day": {
+          "<100": {
+            "episodes": 60,
+            "scorable": 60,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "100-999": {
+            "episodes": 272,
+            "scorable": 272,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "1k-9,999": {
+            "episodes": 535,
+            "scorable": 535,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "10k+": {
+            "episodes": 51,
+            "scorable": 51,
+            "scorable_fraction": 1.0,
+            "detected": 14,
+            "recall_scorable": 0.27450980392156865,
+            "recall_scorable_ci95": [
+              0.1568627450980392,
+              0.39215686274509803
+            ],
+            "recall_all": 0.27450980392156865,
+            "latency_ms": null
+          }
+        },
+        "latency_from_last_tick_ms": {
+          "median": 15079.5,
+          "p90": 19482.0
+        },
+        "latency_from_blackout_start_ms": {
+          "median": 12744.5,
+          "p90": 17508.200000000004
+        },
+        "alert_precision_in_scope": {
+          "alerts": 131,
+          "matched_to_blackouts": 14,
+          "precision": 0.10687022900763359
+        },
+        "control_unaffected": {
+          "instruments": 1193,
+          "alert_rate": 0.4886839899413244
+        }
+      },
+      "3": {
+        "episodes": 918,
+        "scorable": 918,
+        "scorable_fraction": 1.0,
+        "detected": 4,
+        "recall_scorable": 0.004357298474945534,
+        "recall_scorable_ci95": [
+          0.0010893246187363835,
+          0.008714596949891068
+        ],
+        "recall_all": 0.004357298474945534,
+        "latency_ms": {
+          "median": 10552.5,
+          "p90": 10643.5
+        },
+        "recall_all_episodes": 0.004273504273504274,
+        "by_messages_that_day": {
+          "<100": {
+            "episodes": 60,
+            "scorable": 60,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "100-999": {
+            "episodes": 272,
+            "scorable": 272,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "1k-9,999": {
+            "episodes": 535,
+            "scorable": 535,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "10k+": {
+            "episodes": 51,
+            "scorable": 51,
+            "scorable_fraction": 1.0,
+            "detected": 4,
+            "recall_scorable": 0.0784313725490196,
+            "recall_scorable_ci95": [
+              0.0196078431372549,
+              0.1568627450980392
+            ],
+            "recall_all": 0.0784313725490196,
+            "latency_ms": null
+          }
+        },
+        "latency_from_last_tick_ms": {
+          "median": 11584.0,
+          "p90": 11584.0
+        },
+        "latency_from_blackout_start_ms": {
+          "median": 10552.5,
+          "p90": 10643.5
+        },
+        "alert_precision_in_scope": {
+          "alerts": 84,
+          "matched_to_blackouts": 4,
+          "precision": 0.047619047619047616
+        },
+        "control_unaffected": {
+          "instruments": 1193,
+          "alert_rate": 0.3889354568315172
+        }
+      },
+      "5": {
+        "episodes": 918,
+        "scorable": 918,
+        "scorable_fraction": 1.0,
+        "detected": 0,
+        "recall_scorable": 0.0,
+        "recall_scorable_ci95": [
+          0.0,
+          0.0
+        ],
+        "recall_all": 0.0,
+        "latency_ms": {
+          "median": null,
+          "p90": null
+        },
+        "recall_all_episodes": 0.0,
+        "by_messages_that_day": {
+          "<100": {
+            "episodes": 60,
+            "scorable": 60,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "100-999": {
+            "episodes": 272,
+            "scorable": 272,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "1k-9,999": {
+            "episodes": 535,
+            "scorable": 535,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "10k+": {
+            "episodes": 51,
+            "scorable": 51,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          }
+        },
+        "latency_from_last_tick_ms": {
+          "median": null,
+          "p90": null
+        },
+        "latency_from_blackout_start_ms": {
+          "median": null,
+          "p90": null
+        },
+        "alert_precision_in_scope": {
+          "alerts": 49,
+          "matched_to_blackouts": 0,
+          "precision": 0.0
+        },
+        "control_unaffected": {
+          "instruments": 1193,
+          "alert_rate": 0.32103939647946356
+        }
+      },
+      "10": {
+        "episodes": 918,
+        "scorable": 918,
+        "scorable_fraction": 1.0,
+        "detected": 0,
+        "recall_scorable": 0.0,
+        "recall_scorable_ci95": [
+          0.0,
+          0.0
+        ],
+        "recall_all": 0.0,
+        "latency_ms": {
+          "median": null,
+          "p90": null
+        },
+        "recall_all_episodes": 0.0,
+        "by_messages_that_day": {
+          "<100": {
+            "episodes": 60,
+            "scorable": 60,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "100-999": {
+            "episodes": 272,
+            "scorable": 272,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "1k-9,999": {
+            "episodes": 535,
+            "scorable": 535,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          },
+          "10k+": {
+            "episodes": 51,
+            "scorable": 51,
+            "scorable_fraction": 1.0,
+            "detected": 0,
+            "recall_scorable": 0.0,
+            "recall_scorable_ci95": [
+              0.0,
+              0.0
+            ],
+            "recall_all": 0.0,
+            "latency_ms": null
+          }
+        },
+        "latency_from_last_tick_ms": {
+          "median": null,
+          "p90": null
+        },
+        "latency_from_blackout_start_ms": {
+          "median": null,
+          "p90": null
+        },
+        "alert_precision_in_scope": {
+          "alerts": 31,
+          "matched_to_blackouts": 0,
+          "precision": 0.0
+        },
+        "control_unaffected": {
+          "instruments": 1193,
+          "alert_rate": 0.2933780385582565
+        }
+      }
+    },
+    "note": "detection time is LastSeen + threshold (event-time virtual timer), so latency from the last tick equals the threshold by construction; the informative quantities are recall, precision and the control alert rate. Episodes on instruments with fewer than min_observations delivered ticks are excluded: the detector has no baseline for them."
+  },
+  "phase4_validator": {
+    "timestamp_inversion": {
+      "episodes": 28799,
+      "scorable": 28799,
+      "scorable_fraction": 1.0,
+      "detected": 28590,
+      "recall_scorable": 0.9927428035695683,
+      "recall_scorable_ci95": [
+        0.991387972816966,
+        0.9940099524146715
+      ],
+      "recall_all": 0.9927428035695683,
+      "latency_ms": null,
+      "detectable_episodes": 28594,
+      "recall_detectable": 0.999860110512695,
+      "recall_detectable_ci95": [
+        0.9997201989524936,
+        0.9999662643952056
+      ],
+      "alerts": 29229,
+      "false_alerts": 639
+    }
+  },
+  "false_alarms": {
+    "isoforest": {
+      "days": {
+        "all": [
+          "2021-11-08",
+          "2021-11-09",
+          "2021-11-10",
+          "2021-11-11",
+          "2021-11-12"
+        ],
+        "injected": [
+          "2021-11-09",
+          "2021-11-10",
+          "2021-11-11"
+        ],
+        "clean": [
+          "2021-11-08",
+          "2021-11-12"
+        ],
+        "warmup_excluded": [
+          "2021-11-08"
+        ],
+        "headline": [
+          "2021-11-12"
+        ]
+      },
+      "by_threshold": {
+        "1.0": {
+          "headline_alerts_per_1000_vectors": 106.35290350489626,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 444744,
+              "alerts_per_1000_vectors": 145.6532361490828,
+              "instruments_alerting": 0.8298738298738298
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 345422,
+              "alerts_per_1000_vectors": 106.35290350489626,
+              "instruments_alerting": 0.872168284789644
+            }
+          }
+        },
+        "1.5": {
+          "headline_alerts_per_1000_vectors": 79.96588549163532,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 306495,
+              "alerts_per_1000_vectors": 100.37682040345263,
+              "instruments_alerting": 0.7737077737077737
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 259720,
+              "alerts_per_1000_vectors": 79.96588549163532,
+              "instruments_alerting": 0.8127022653721683
+            }
+          }
+        },
+        "2.0": {
+          "headline_alerts_per_1000_vectors": 46.32891866553157,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 158644,
+              "alerts_per_1000_vectors": 51.95575880874187,
+              "instruments_alerting": 0.7273097273097273
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 150471,
+              "alerts_per_1000_vectors": 46.32891866553157,
+              "instruments_alerting": 0.7479773462783171
+            }
+          }
+        },
+        "3.0": {
+          "headline_alerts_per_1000_vectors": 8.947053236182931,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 37784,
+              "alerts_per_1000_vectors": 12.374223991008186,
+              "instruments_alerting": 0.5478225478225478
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 29059,
+              "alerts_per_1000_vectors": 8.947053236182931,
+              "instruments_alerting": 0.4975728155339806
+            }
+          }
+        },
+        "3.5": {
+          "headline_alerts_per_1000_vectors": 3.3751195008443955,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 14066,
+              "alerts_per_1000_vectors": 4.6066015947893595,
+              "instruments_alerting": 0.4436304436304436
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 10962,
+              "alerts_per_1000_vectors": 3.3751195008443955,
+              "instruments_alerting": 0.3697411003236246
+            }
+          }
+        },
+        "4.0": {
+          "headline_alerts_per_1000_vectors": 0.4292023886313709,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 2140,
+              "alerts_per_1000_vectors": 0.7008479605324348,
+              "instruments_alerting": 0.18315018315018314
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 1394,
+              "alerts_per_1000_vectors": 0.4292023886313709,
+              "instruments_alerting": 0.14158576051779936
+            }
+          }
+        },
+        "4.5": {
+          "headline_alerts_per_1000_vectors": 0.02894191142851425,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 73,
+              "alerts_per_1000_vectors": 0.02390743042937745,
+              "instruments_alerting": 0.0231990231990232
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 94,
+              "alerts_per_1000_vectors": 0.02894191142851425,
+              "instruments_alerting": 0.024271844660194174
+            }
+          }
+        },
+        "5.0": {
+          "headline_alerts_per_1000_vectors": 0.00030789267477142817,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 2,
+              "alerts_per_1000_vectors": 0.0006549980939555466,
+              "instruments_alerting": 0.000814000814000814
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 1,
+              "alerts_per_1000_vectors": 0.00030789267477142817,
+              "instruments_alerting": 0.0004045307443365696
+            }
+          }
+        },
+        "6.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "7.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "8.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "9.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "10.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "12.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "15.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        },
+        "20.0": {
+          "headline_alerts_per_1000_vectors": 0.0,
+          "per_day": {
+            "2021-11-08": {
+              "vectors": 3053444,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            },
+            "2021-11-12": {
+              "vectors": 3247885,
+              "alerts": 0,
+              "alerts_per_1000_vectors": 0.0,
+              "instruments_alerting": 0.0
+            }
+          }
+        }
+      }
+    },
+    "silence": {
+      "1": {
+        "2021-11-08": {
+          "alerts": 266469,
+          "active_instruments": 2457,
+          "alerts_per_active_instrument": 108.45299145299145
+        },
+        "2021-11-12": {
+          "alerts": 319768,
+          "active_instruments": 2472,
+          "alerts_per_active_instrument": 129.3559870550162
+        }
+      },
+      "2": {
+        "2021-11-08": {
+          "alerts": 241026,
+          "active_instruments": 2457,
+          "alerts_per_active_instrument": 98.0976800976801
+        },
+        "2021-11-12": {
+          "alerts": 289279,
+          "active_instruments": 2472,
+          "alerts_per_active_instrument": 117.02224919093851
+        }
+      },
+      "3": {
+        "2021-11-08": {
+          "alerts": 235228,
+          "active_instruments": 2457,
+          "alerts_per_active_instrument": 95.73789173789174
+        },
+        "2021-11-12": {
+          "alerts": 280212,
+          "active_instruments": 2472,
+          "alerts_per_active_instrument": 113.35436893203884
+        }
+      },
+      "5": {
+        "2021-11-08": {
+          "alerts": 227095,
+          "active_instruments": 2457,
+          "alerts_per_active_instrument": 92.42775742775743
+        },
+        "2021-11-12": {
+          "alerts": 268662,
+          "active_instruments": 2472,
+          "alerts_per_active_instrument": 108.68203883495146
+        }
+      },
+      "10": {
+        "2021-11-08": {
+          "alerts": 212585,
+          "active_instruments": 2457,
+          "alerts_per_active_instrument": 86.52218152218153
+        },
+        "2021-11-12": {
+          "alerts": 248944,
+          "active_instruments": 2472,
+          "alerts_per_active_instrument": 100.70550161812298
+        }
+      }
+    },
+    "validation_alerts_per_clean_day": {
+      "2021-11-08": 16,
+      "2021-11-12": 32
+    }
+  },
+  "sweep": [
+    {
+      "threshold": 1.0,
+      "clean_alerts_per_1000_vectors": 106.35290350489626,
+      "phase1_affected_detection_rate": 0.8315789473684211,
+      "phase1_control_detection_rate": 0.7876230661040787,
+      "phase2_price_deviation_strict_recall": 0.47699757869249393,
+      "phase2_price_spike_strict_recall": 0.9960159362549801,
+      "phase2_stale_recall": 0.6377952755905512,
+      "phase4_implausible_price_strict_recall": 0.8982558139534884
+    },
+    {
+      "threshold": 1.5,
+      "clean_alerts_per_1000_vectors": 79.96588549163532,
+      "phase1_affected_detection_rate": 0.7894736842105263,
+      "phase1_control_detection_rate": 0.7264416315049227,
+      "phase2_price_deviation_strict_recall": 0.44552058111380144,
+      "phase2_price_spike_strict_recall": 0.9940239043824701,
+      "phase2_stale_recall": 0.5616797900262467,
+      "phase4_implausible_price_strict_recall": 0.8531976744186046
+    },
+    {
+      "threshold": 2.0,
+      "clean_alerts_per_1000_vectors": 46.32891866553157,
+      "phase1_affected_detection_rate": 0.7357894736842105,
+      "phase1_control_detection_rate": 0.6786216596343179,
+      "phase2_price_deviation_strict_recall": 0.4067796610169492,
+      "phase2_price_spike_strict_recall": 0.9940239043824701,
+      "phase2_stale_recall": 0.44181977252843396,
+      "phase4_implausible_price_strict_recall": 0.8052325581395349
+    },
+    {
+      "threshold": 3.0,
+      "clean_alerts_per_1000_vectors": 8.947053236182931,
+      "phase1_affected_detection_rate": 0.5863157894736842,
+      "phase1_control_detection_rate": 0.5140646976090014,
+      "phase2_price_deviation_strict_recall": 0.29539951573849876,
+      "phase2_price_spike_strict_recall": 0.9840637450199203,
+      "phase2_stale_recall": 0.14085739282589677,
+      "phase4_implausible_price_strict_recall": 0.6976744186046512
+    },
+    {
+      "threshold": 3.5,
+      "clean_alerts_per_1000_vectors": 3.3751195008443955,
+      "phase1_affected_detection_rate": 0.47578947368421054,
+      "phase1_control_detection_rate": 0.37341772151898733,
+      "phase2_price_deviation_strict_recall": 0.27602905569007263,
+      "phase2_price_spike_strict_recall": 0.9422310756972112,
+      "phase2_stale_recall": 0.0778652668416448,
+      "phase4_implausible_price_strict_recall": 0.6497093023255814
+    },
+    {
+      "threshold": 4.0,
+      "clean_alerts_per_1000_vectors": 0.4292023886313709,
+      "phase1_affected_detection_rate": 0.3042105263157895,
+      "phase1_control_detection_rate": 0.12939521800281295,
+      "phase2_price_deviation_strict_recall": 0.03389830508474576,
+      "phase2_price_spike_strict_recall": 0.16533864541832669,
+      "phase2_stale_recall": 0.012248468941382326,
+      "phase4_implausible_price_strict_recall": 0.10755813953488372
+    },
+    {
+      "threshold": 4.5,
+      "clean_alerts_per_1000_vectors": 0.02894191142851425,
+      "phase1_affected_detection_rate": 0.12421052631578948,
+      "phase1_control_detection_rate": 0.005625879043600563,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0008748906386701663,
+      "phase4_implausible_price_strict_recall": 0.0014534883720930232
+    },
+    {
+      "threshold": 5.0,
+      "clean_alerts_per_1000_vectors": 0.00030789267477142817,
+      "phase1_affected_detection_rate": 0.002105263157894737,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 6.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 7.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 8.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 9.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 10.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 12.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 15.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    },
+    {
+      "threshold": 20.0,
+      "clean_alerts_per_1000_vectors": 0.0,
+      "phase1_affected_detection_rate": 0.0,
+      "phase1_control_detection_rate": 0.0,
+      "phase2_price_deviation_strict_recall": 0.0,
+      "phase2_price_spike_strict_recall": 0.0,
+      "phase2_stale_recall": 0.0,
+      "phase4_implausible_price_strict_recall": 0.0
+    }
+  ]
+}
