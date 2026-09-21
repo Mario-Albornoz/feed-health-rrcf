@@ -3,9 +3,9 @@
         build-simulator build-handler setup-detector \
         run-handler run-detector run-simulator run-simulator-foreground \
         run-all stop-all status logs \
-        test test-integration test-thesis test-simulator-completion clean-all \
+        test test-integration test-thesis test-simulator-completion test-stop-all test-stop-all-real test-archive-run clean-all \
         kafka-reset drain integration-test smoke-run describe-dataset \
-        run-thesis-experiment verify-run evaluate-thesis thesis-full
+        run-thesis-experiment archive-run verify-run evaluate-thesis thesis-full
 
 # Default target
 .DEFAULT_GOAL := help
@@ -32,6 +32,13 @@ PIDS_DIR := $(PROJECT_ROOT)/.pids
 HANDLER_PID := $(PIDS_DIR)/handler.pid
 SIMULATOR_PID := $(PIDS_DIR)/simulator.pid
 
+# Shell test, exit 0 when the pid file $(1) holds a positive pid of a live process. A pid file
+# containing 0 (the disabled stream collector, see scripts/start_detector.sh) must never reach
+# `kill`: `kill 0` signals the caller's whole process group, which took make, the handler and
+# the detector down together at the end of a thesis run. Empty or garbage files count as dead.
+# Regression test: test-run/test_stop_all.sh (make test-stop-all)
+pid_alive = [ "$$(cat $(1) 2>/dev/null)" -gt 0 ] 2>/dev/null && kill -0 "$$(cat $(1))" 2>/dev/null
+
 # Log directory
 LOGS_DIR := $(PROJECT_ROOT)/logs
 
@@ -42,6 +49,8 @@ PY := $(DETECTOR_DIR)/venv/bin/python3
 RESULTS_DIR := results
 RUN_STAMP := $(shell date +%Y%m%d_%H%M%S)
 NEW_RUN_DIR := $(RESULTS_DIR)/thesis_$(RUN_STAMP)
+# where archive-run puts a run's inputs (must be under RESULTS_DIR: "latest" links to its name)
+ARCHIVE_DIR ?= $(NEW_RUN_DIR)
 # the run that verify-run / evaluate-thesis work on (run-thesis-experiment repoints "latest")
 RUN_DIR ?= $(RESULTS_DIR)/latest
 # Kafka CLI tools run inside the broker container (no extra installs needed)
@@ -234,7 +243,7 @@ run-handler: ## Start feed-handler (background)
 
 run-detector: ## Start rrcf-detector (background)
 	@mkdir -p $(PIDS_DIR) $(LOGS_DIR)
-	@if [ -f $(PIDS_DIR)/detector-collector.pid ] && kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+	@if $(call pid_alive,$(PIDS_DIR)/detector-collector.pid); then \
 		echo "$(YELLOW)Detector already running$(NC)"; \
 	else \
 		PIDS=$$(./scripts/start_detector.sh) && \
@@ -260,7 +269,7 @@ stop-all: ## Stop all running pipeline components
 	@echo ""
 	@# Kill simulator
 	@if [ -f $(SIMULATOR_PID) ]; then \
-		if kill -0 $$(cat $(SIMULATOR_PID)) 2>/dev/null; then \
+		if $(call pid_alive,$(SIMULATOR_PID)); then \
 			kill $$(cat $(SIMULATOR_PID)) 2>/dev/null || true; \
 			sleep 0.5; \
 			kill -9 $$(cat $(SIMULATOR_PID)) 2>/dev/null || true; \
@@ -272,7 +281,7 @@ stop-all: ## Stop all running pipeline components
 	fi
 	@# Kill detector collector and all its children
 	@if [ -f $(PIDS_DIR)/detector-collector.pid ]; then \
-		if kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+		if $(call pid_alive,$(PIDS_DIR)/detector-collector.pid); then \
 			pkill -P $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
 			kill $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null || true; \
 			sleep 0.5; \
@@ -285,7 +294,7 @@ stop-all: ## Stop all running pipeline components
 	fi
 	@# Kill detector multi-model and ALL its worker children
 	@if [ -f $(PIDS_DIR)/detector-multi.pid ]; then \
-		if kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null; then \
+		if $(call pid_alive,$(PIDS_DIR)/detector-multi.pid); then \
 			pkill -P $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
 			kill $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || true; \
 			for i in $$(seq 1 240); do kill -0 $$(cat $(PIDS_DIR)/detector-multi.pid) 2>/dev/null || break; sleep 0.5; done; \
@@ -299,7 +308,7 @@ stop-all: ## Stop all running pipeline components
 	fi
 	@# Kill handler
 	@if [ -f $(HANDLER_PID) ]; then \
-		if kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null; then \
+		if $(call pid_alive,$(HANDLER_PID)); then \
 			kill $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
 			for i in $$(seq 1 120); do kill -0 $$(cat $(HANDLER_PID)) 2>/dev/null || break; sleep 0.5; done; \
 			kill -9 $$(cat $(HANDLER_PID)) 2>/dev/null || true; \
@@ -328,7 +337,7 @@ status: ## Show status of all pipeline components
 	fi
 	@echo ""
 	@echo "$(YELLOW)RRCF Detector:$(NC)"
-	@if [ -f $(PIDS_DIR)/detector-collector.pid ] && kill -0 $$(cat $(PIDS_DIR)/detector-collector.pid) 2>/dev/null; then \
+	@if $(call pid_alive,$(PIDS_DIR)/detector-collector.pid); then \
 		echo "  $(GREEN)● Collector Running$(NC) (PID: $$(cat $(PIDS_DIR)/detector-collector.pid))"; \
 	else \
 		echo "  $(RED)○ Collector Stopped$(NC)"; \
@@ -384,6 +393,15 @@ test-simulator-completion: ## Test that simulator completes gracefully (doesn't 
 	@echo "$(BLUE)Testing simulator completion and graceful shutdown...$(NC)"
 	@./test-run/test_simulator_completion.sh
 
+test-stop-all: ## Regression test for stop-all (dummy processes, no Kafka; refuses to run next to a live pipeline)
+	@./test-run/test_stop_all.sh
+
+test-stop-all-real: ## Same, plus the REAL handler and detector (collector pid 0); needs kafka-up and built binaries
+	@./test-run/test_stop_all.sh --real
+
+test-archive-run: ## Test archive-run on fake module directories in a scratch dir (touches nothing real)
+	@./test-run/test_archive_run.sh
+
 ##@ Cleanup
 
 clean: ## Clean build artifacts and logs
@@ -437,7 +455,8 @@ describe-dataset: ## Profile the dataset (both directories, about 15 minutes) ->
 #      published. Stopping earlier throws away the unprocessed tail of the run.
 #   5. stop everything gracefully (the detector must close its parquet file, the handler
 #      runs its final silence scan), archive the run under results/thesis_<stamp>/inputs
-#      with the configs and git revisions, and run the verifier.
+#      with the configs and git revisions (the separate target archive-run, which can be
+#      repeated by hand), and run the verifier.
 # Nothing is committed or pushed; stage-by-stage problems show up in the verifier report.
 run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/thesis_<stamp>, verify
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
@@ -481,19 +500,10 @@ run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/
 	@echo "$(YELLOW)Stopping pipeline components (graceful)...$(NC)"
 	@$(MAKE) stop-all
 	@echo ""
-	@echo "$(YELLOW)Archiving the run to $(NEW_RUN_DIR)/inputs ...$(NC)"
-	@mkdir -p $(NEW_RUN_DIR)/inputs/logs $(NEW_RUN_DIR)/inputs/config
-	@cp $(SIMULATOR_DIR)/anomaly_log.csv $(SIMULATOR_DIR)/anomaly_log_episodes.csv $(SIMULATOR_DIR)/anomaly_log_instruments.csv $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ simulator ground-truth files missing$(NC)"
-	@cp $(SIMULATOR_DIR)/data/injection_manifest.json $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ manifest missing$(NC)"
-	@cp $(HANDLER_DIR)/data/eval/*.csv $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ handler alert logs missing$(NC)"
-	@cp $(DETECTOR_DIR)/data/scores_rrcf.parquet $(NEW_RUN_DIR)/inputs/ || echo "$(RED)✗ scores file missing$(NC)"
-	@cp $(LOGS_DIR)/*.log $(NEW_RUN_DIR)/inputs/logs/ 2>/dev/null || true
-	@cp $(SIMULATOR_DIR)/config/simulator-with-anomalies.yaml $(HANDLER_DIR)/config/aggregator.yaml $(DETECTOR_DIR)/config/baselines.yaml $(NEW_RUN_DIR)/inputs/config/
-	@{ for d in . $(SIMULATOR_DIR) $(HANDLER_DIR) $(DETECTOR_DIR); do \
-		echo "$$d: $$(git -C $$d rev-parse --short HEAD) $$(git -C $$d status --porcelain | wc -l | tr -d ' ') uncommitted files"; \
-	done; } > $(NEW_RUN_DIR)/inputs/versions.txt
-	@ln -sfn thesis_$(RUN_STAMP) $(RESULTS_DIR)/latest
-	@echo "$(GREEN)✓ Archived; $(RESULTS_DIR)/latest -> thesis_$(RUN_STAMP)$(NC)"
+	@# archiving is its own target (archive-run) so it can be repeated by hand if this step fails;
+	@# ARCHIVE_DIR is passed explicitly because a sub-make would compute a new RUN_STAMP
+	@$(MAKE) archive-run ARCHIVE_DIR=$(NEW_RUN_DIR) \
+		|| echo "$(RED)✗ Archiving failed; the outputs are still in the module data/ directories. Fix the cause and run: make archive-run ARCHIVE_DIR=$(NEW_RUN_DIR)$(NC)"
 	@echo ""
 	@$(MAKE) verify-run RUN_DIR=$(NEW_RUN_DIR) || echo "$(RED)✗ The verifier reported FAILED checks: read $(NEW_RUN_DIR)/verify.txt before evaluating$(NC)"
 	@echo ""
@@ -537,6 +547,45 @@ drain: ## Wait until the handler and detector have processed everything the simu
 	done; \
 	[ "$$PREV" -gt 0 ] || { echo "$(RED)✗ the detector wrote no scores to $$F (logs/detector-multi.log)$(NC)"; exit 1; }; \
 	echo "$(GREEN)✓ Everything the simulator published has been processed$(NC)"
+
+# Copy a finished run's raw outputs from the module directories into ARCHIVE_DIR/inputs: the
+# simulator's ground truth, the handler's alert logs, the scores, the logs, the configs and the
+# git revisions; then repoint results/latest. It is a separate target so it can be repeated on
+# its own if the end of run-thesis-experiment fails:
+#     make archive-run ARCHIVE_DIR=results/thesis_<stamp>      (default: a new thesis_<now> dir)
+# Run it BEFORE the next run-thesis-experiment, which deletes these files (clean-output-files).
+# It copies everything it can, then exits 1 if an essential file was missing. It refuses to
+# overwrite an archive whose scores file has a different size (a different run) unless FORCE=1.
+# versions.txt records the repositories as they are when this runs. If you run it by hand
+# long after the run, uncommitted-file counts may differ from what was used.
+archive-run: ## Copy the last run's outputs, logs, configs and git revisions into ARCHIVE_DIR/inputs (default: new results/thesis_<stamp>)
+	@echo "$(YELLOW)Archiving the run to $(ARCHIVE_DIR)/inputs ...$(NC)"
+	@if [ -f $(ARCHIVE_DIR)/inputs/scores_rrcf.parquet ] && [ -f $(DETECTOR_DIR)/data/scores_rrcf.parquet ] \
+		&& [ "$$(stat -f %z $(ARCHIVE_DIR)/inputs/scores_rrcf.parquet)" != "$$(stat -f %z $(DETECTOR_DIR)/data/scores_rrcf.parquet)" ] \
+		&& [ "$(FORCE)" != "1" ]; then \
+		echo "$(RED)✗ $(ARCHIVE_DIR)/inputs already holds a different scores file (another run?). Not overwriting; pass FORCE=1 to override.$(NC)"; exit 1; \
+	fi
+	@mkdir -p $(ARCHIVE_DIR)/inputs/logs $(ARCHIVE_DIR)/inputs/config
+	@MISSING=0; \
+	cp $(SIMULATOR_DIR)/anomaly_log.csv $(SIMULATOR_DIR)/anomaly_log_episodes.csv $(SIMULATOR_DIR)/anomaly_log_instruments.csv $(ARCHIVE_DIR)/inputs/ \
+		|| { echo "$(RED)✗ simulator ground-truth files missing$(NC)"; MISSING=1; }; \
+	cp $(SIMULATOR_DIR)/data/injection_manifest.json $(ARCHIVE_DIR)/inputs/ \
+		|| { echo "$(RED)✗ manifest missing$(NC)"; MISSING=1; }; \
+	cp $(HANDLER_DIR)/data/eval/*.csv $(ARCHIVE_DIR)/inputs/ \
+		|| { echo "$(RED)✗ handler alert logs missing$(NC)"; MISSING=1; }; \
+	cp $(DETECTOR_DIR)/data/scores_rrcf.parquet $(ARCHIVE_DIR)/inputs/ \
+		|| { echo "$(RED)✗ scores file missing$(NC)"; MISSING=1; }; \
+	cp $(LOGS_DIR)/*.log $(ARCHIVE_DIR)/inputs/logs/ 2>/dev/null || true; \
+	cp $(SIMULATOR_DIR)/config/simulator-with-anomalies.yaml $(HANDLER_DIR)/config/aggregator.yaml $(DETECTOR_DIR)/config/baselines.yaml $(ARCHIVE_DIR)/inputs/config/ \
+		|| { echo "$(RED)✗ config files missing$(NC)"; MISSING=1; }; \
+	{ for d in . $(SIMULATOR_DIR) $(HANDLER_DIR) $(DETECTOR_DIR); do \
+		echo "$$d: $$(git -C $$d rev-parse --short HEAD) $$(git -C $$d status --porcelain | wc -l | tr -d ' ') uncommitted files"; \
+	done; } > $(ARCHIVE_DIR)/inputs/versions.txt; \
+	ln -sfn $(notdir $(ARCHIVE_DIR)) $(RESULTS_DIR)/latest; \
+	if [ $$MISSING -ne 0 ]; then \
+		echo "$(RED)✗ Archive incomplete: $(ARCHIVE_DIR)/inputs is missing files (see above)$(NC)"; exit 1; \
+	fi; \
+	echo "$(GREEN)✓ Archived; $(RESULTS_DIR)/latest -> $(notdir $(ARCHIVE_DIR))$(NC)"
 
 verify-run: ## Stage-by-stage PASS/WARN/FAIL report on an archived run (RUN_DIR=..., default results/latest)
 	@echo "$(BLUE)Verifying $(RUN_DIR) against the live Kafka topics...$(NC)"

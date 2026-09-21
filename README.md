@@ -636,7 +636,8 @@ The Mac is kept awake with `caffeinate` for as long as `make` runs. Keep the ter
 5. Runs the **simulator in the foreground** with `simulator-with-anomalies.yaml` (output in `logs/simulator.log`).
 6. Runs `make drain`: waits until the handler and detector have processed everything the simulator published.
 7. `make stop-all` (graceful).
-8. **Archives** the run to `results/thesis_<timestamp>/inputs/` and points `results/latest` at it:
+8. **Archives** the run (the separate target `make archive-run`, see below) to
+   `results/thesis_<timestamp>/inputs/` and points `results/latest` at it:
    - `anomaly_log_episodes.csv` (ground truth, one row per episode, with message `Seq`),
      `anomaly_log_instruments.csv` (rows and trades per instrument per day), `anomaly_log.csv`
      (tick-level log), `injection_manifest.json`
@@ -685,7 +686,8 @@ It is safe to run this many times on the same run.
 | `drain` timed out or a consumer group is missing | look at `logs/handler.log` / `logs/detector-multi.log`; a stopped consumer never finishes |
 | Simulator failed | `tail logs/simulator.log`; the usual causes are missing data files or a Kafka connection |
 | Evaluation stops with "No threshold in [...] reaches N alerts per 1000 vectors" | no threshold in `THRESHOLDS` is high enough for `TARGET_FAR`: `make evaluate-thesis THRESHOLDS=1,2,3,4,5,6,8,10` |
-| Evaluation says a file is missing | the run was not archived; check `results/latest` and `results/thesis_<stamp>/inputs/` |
+| Evaluation says a file is missing | the run was not archived; check `results/latest` and `results/thesis_<stamp>/inputs/`. The outputs are still in the module `data/` directories until the next run: `make archive-run ARCHIVE_DIR=results/thesis_<stamp>` repeats the archive step (it refuses to overwrite an archive that holds a different run's scores unless `FORCE=1`, and exits 1 if an essential file is missing). Then `make verify-run` / `make evaluate-thesis` |
+| `make stop-all` printed `Terminated: 15` and killed the run | fixed: a pid file holding `0` (the disabled collector) made `kill 0` signal the whole process group. Regression tests: `make test-stop-all` (dummy processes) and `make test-stop-all-real` (real handler and detector; needs `make kafka-up`) |
 
 ### Other commands
 

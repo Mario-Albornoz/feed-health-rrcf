@@ -1,0 +1,53 @@
+
+== Ground truth (simulator)
+  [PASS] messages processed by the simulator: 202,971,084
+  [PASS] episode file has rows: 49,041
+  [PASS] phase1 episodes injected: 1,139
+  [PASS] phase2 episodes injected: 11,248
+  [PASS] phase3 episodes injected: 936
+  [PASS] phase4 episodes injected: 35,718
+  [PASS] share of episodes on equities: 100.0%
+  [PASS] trades as a share of equity rows: 4.19%
+  [PASS] days in the run: ['2021-11-08', '2021-11-09', '2021-11-10', '2021-11-11', '2021-11-12']
+
+== Kafka
+  [FAIL] messages on raw-ticks vs simulator: 0 of 200,207,738 (0.0000)
+         expected: 1.000 (published = processed - dropped by injection)
+         hint:     messages were lost between the simulator and Kafka (the writer is asynchronous: check the simulator's 'acknowledged by Kafka' count)
+
+== Kafka: raw messages (simulator's wire format)
+  [skip] sample: no messages
+
+== Kafka
+  [PASS] vectors on normalized-vectors: 77,698,438
+
+== Kafka: feature vectors
+  [PASS] vectors flagged as trades: 5.24% of 12,000 sampled
+  [PASS] quote rows with a price z-score: 0.000%
+  [PASS] trade rows with a non-zero price z-score: 98.1%
+  [PASS] non-finite feature values (NaN/Inf): 0
+  [PASS] slow timing z-score beyond 3: 2.0%
+
+== Feed-handler evaluation logs
+  [WARN] silence alerts per 1000 vectors: 1,398,006 alerts, 17.99 per 1000 vectors
+         expected: about 1 (the quantile rule)
+         hint:     far more: the rule is firing on ordinary gaps (mean-multiple rule? clock jitter? overnight gap?)
+  [PASS] silence triggers: {'scan': 1278640, 'resume': 119366}
+  [PASS] end-of-stream (flush) alerts: 0
+  [PASS] validation alerts by type: {'TIMESTAMP_INVERSION': 29230}
+  [PASS] validation alerts beyond the injected inversions: 431 of 29,230 alerts (0.0006% of vectors)
+
+== Detector scores
+  [PASS] score rows: 16,670,841
+  [FAIL] scores vs vectors / stride: 16,670,841 vs 7,769,844 (2.146)
+         expected: about 1.0 (one vector in ten is scored, after each model's warm-up)
+         hint:     far below: the detector lagged, was stopped early, or workers crashed; above: duplicates
+  [PASS] non-finite scores: 0
+  [PASS] share of scores with z >= 2: 3.54%
+  [PASS] spread of z-scores: 1.022
+  [PASS] episode instruments present in the scores: 98.5%
+
+== Scores meet ground truth
+  [PASS] injected messages whose own vector was scored (by sequence number): 9.8% of 16,487 episodes
+
+25 passed, 1 warnings, 2 FAILED, 1 skipped
