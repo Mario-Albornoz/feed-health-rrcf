@@ -45,6 +45,7 @@ LOGS_DIR := $(PROJECT_ROOT)/logs
 # Thesis run: python of the detector venv, where a run's files are archived, and the
 # evaluation settings. Override on the command line, e.g.
 #   make evaluate-thesis RUN_DIR=results/thesis_20260921_101500 TARGET_FAR=0.5
+#   make evaluate-thesis RUN_DIR=results/thesis_20260923_003839 SCORE_COLUMN=z_score   (old protocol)
 PY := $(DETECTOR_DIR)/venv/bin/python3
 # cross-checks an archived vector sample against the runner's own summary of the run
 CHECK_SAMPLE := $(DETECTOR_DIR)/scripts/check_vector_sample.py
@@ -65,8 +66,19 @@ HANDLER_GROUP := aggregator-group
 DETECTOR_GROUP := rrcf-detector-baselines-multi
 # how long "make drain" waits in total (seconds)
 DRAIN_TIMEOUT ?= 21600
+# Evaluation settings (see docs/FIX_PLAN.md, fix A).
+# SCORE_COLUMN: the column of scores_<model>.parquet that alerts are thresholded on.
+#   raw_score (default): each model's own score; thresholds are set as a false-alarm budget
+#     on the clean days, so models on different scales are compared at the same budget.
+#   z_score: the detector's running normalisation, with the fixed THRESHOLDS below; this
+#     reproduces the older evaluations (it collapses after one extreme score).
+SCORE_COLUMN ?= raw_score
 # alert threshold is picked on the clean days at this many alerts per 1000 scored vectors
 TARGET_FAR ?= 1.0
+# raw_score: the false-alarm budgets swept (alerts per 1000 clean vectors); each becomes the
+# score quantile that gives it on the calibration day (the first clean day after warm-up)
+FAR_GRID ?= 0.1,0.2,0.5,1,2,5,10
+# z_score only: fixed thresholds swept (ignored for raw_score)
 THRESHOLDS ?= 1,1.5,2,3,3.5,4,4.5,5,6,7,8,9,10,12,15,20
 
 ##@ Help
@@ -644,7 +656,7 @@ verify-run: ## PASS/WARN/FAIL report per model on an archived run (RUN_DIR=..., 
 	[ $$N -gt 0 ] || { echo "$(RED)✗ no scores parquet in $(RUN_DIR)/inputs$(if $(MODEL), (MODEL=$(MODEL)))$(NC)"; exit 1; }; \
 	exit $$STATUS
 
-evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=... optional; TARGET_FAR, THRESHOLDS)
+evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=... optional; SCORE_COLUMN, TARGET_FAR, FAR_GRID, THRESHOLDS)
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(BLUE)  Thesis Evaluation: RQ1 + RQ2   ($(RUN_DIR))$(NC)"
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
@@ -662,6 +674,7 @@ evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=
 			--scores ../$$s --method-name $$m \
 			--silence-log ../$(RUN_DIR)/inputs/silence_alerts.csv \
 			--validation-log ../$(RUN_DIR)/inputs/validation_alerts.csv \
+			--score-column $(SCORE_COLUMN) --far-grid $(FAR_GRID) \
 			--thresholds $(THRESHOLDS) --target-far $(TARGET_FAR) \
 			--output ../$(RUN_DIR)/evaluation/$$m ) || { echo "$(RED)✗ evaluation of $$m failed$(NC)"; STATUS=1; }; \
 	done; \

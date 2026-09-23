@@ -61,8 +61,10 @@ def rows_for(name, d, block, far):
     cp = block.get("cluster_precision_at_injected_density", {})
 
     r = [
-        ("Operating threshold (z-score)", num(thr, "{:g}")),
-        ("Clean-day false alarms / 1000 vectors", num(at_thr.get("headline_alerts_per_1000_vectors"), "{:.3f}")),
+        (f"Operating threshold ({d.get('score_column', 'z_score')})", num(thr, "{:g}")),
+        ("Target false alarms / 1000 vectors", num(d.get("operating_target_far_per_1000"), "{:g}")),
+        ("Clean-day false alarms / 1000 vectors" + (" (held out)" if d.get("threshold_mode") == "far" else ""),
+         num(at_thr.get("headline_alerts_per_1000_vectors"), "{:.3f}")),
         ("-- Phase 1: gradual decline / feed degradation", ""),
         ("Affected instruments detected (recall)", pct_ci(p1.get("affected"))),
         ("Control instruments flagged (same days)", pct_ci(p1.get("control_unaffected"), "detection_rate")),
