@@ -1,0 +1,54 @@
+
+== Ground truth (simulator)
+  [PASS] messages processed by the simulator: 202,971,084
+  [PASS] episode file has rows: 39,469
+  [PASS] phase1 episodes injected: 1,005
+  [PASS] phase2 episodes injected: 11,445
+  [PASS] phase3 episodes injected: 932
+  [PASS] phase4 episodes injected: 26,087
+  [PASS] share of episodes on equities: 100.0%
+  [PASS] trades as a share of equity rows: 4.19%
+  [PASS] days in the run: ['2021-11-08', '2021-11-09', '2021-11-10', '2021-11-11', '2021-11-12']
+
+== Kafka
+  [FAIL] messages on raw-ticks vs simulator: 7,500 of 200,962,519 (0.0000)
+         expected: 1.000 (published = processed - dropped by injection)
+         hint:     messages were lost between the simulator and Kafka (the writer is asynchronous: check the simulator's 'acknowledged by Kafka' count)
+
+== Kafka: raw messages (simulator's wire format)
+  [PASS] equity messages with a last price: 2.31% of 6,835 sampled
+  [PASS] per-instrument time going back by more than 1 s: 0.0000%
+
+== Kafka
+  [FAIL] vectors per raw message: 167,471,602 / 7,500 = 22329.547
+         expected: about 0.8 (equities are about 82% of rows; index rows and rejected messages emit nothing)
+         hint:     far below: the handler is lagging or dropping (it may still be running), or the wrong SecType filter; above 0.95: index rows are not being filtered
+
+== Kafka: feature vectors
+  [PASS] vectors flagged as trades: 5.33% of 12,000 sampled
+  [PASS] quote rows with a price z-score: 0.000%
+  [PASS] trade rows with a non-zero price z-score: 98.1%
+  [PASS] non-finite feature values (NaN/Inf): 0
+  [PASS] slow timing z-score beyond 3: 2.1%
+
+== Feed-handler evaluation logs
+  [WARN] silence alerts per 1000 vectors: 1,374,815 alerts, 8.21 per 1000 vectors
+         expected: about 1 (the quantile rule)
+         hint:     far more: the rule is firing on ordinary gaps (mean-multiple rule? clock jitter? overnight gap?)
+  [PASS] silence triggers: {'scan': 1253099, 'resume': 121716}
+  [PASS] end-of-stream (flush) alerts: 0
+  [PASS] validation alerts by type: {'TIMESTAMP_INVERSION': 20825}
+  [PASS] validation alerts beyond the injected inversions: 516 of 20,825 alerts (0.0003% of vectors)
+
+== Detector scores
+  [PASS] score rows: 16,727,160
+  [PASS] scores vs vectors / stride: 16,727,160 vs 16,747,160 (0.999)
+  [PASS] non-finite scores: 0
+  [PASS] share of scores with z >= 2: 2.27%
+  [PASS] spread of z-scores: 2.107
+  [PASS] episode instruments present in the scores: 99.8%
+
+== Scores meet ground truth
+  [PASS] injected messages whose own vector was scored (by sequence number): 9.9% of 15,595 episodes
+
+27 passed, 1 warnings, 2 FAILED, 0 skipped

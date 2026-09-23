@@ -1,0 +1,242 @@
+[
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "messages processed by the simulator",
+    "status": "PASS",
+    "observed": "202,971,084",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "episode file has rows",
+    "status": "PASS",
+    "observed": "39,469",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "phase1 episodes injected",
+    "status": "PASS",
+    "observed": "1,005",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "phase2 episodes injected",
+    "status": "PASS",
+    "observed": "11,445",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "phase3 episodes injected",
+    "status": "PASS",
+    "observed": "932",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "phase4 episodes injected",
+    "status": "PASS",
+    "observed": "26,087",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "share of episodes on equities",
+    "status": "PASS",
+    "observed": "100.0%",
+    "expected": "most episodes on equities (indices never reach the detector)",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "trades as a share of equity rows",
+    "status": "PASS",
+    "observed": "4.19%",
+    "expected": "about 4% (4.2% measured on the DEBS files)",
+    "hint": ""
+  },
+  {
+    "stage": "Ground truth (simulator)",
+    "check": "days in the run",
+    "status": "PASS",
+    "observed": "['2021-11-08', '2021-11-09', '2021-11-10', '2021-11-11', '2021-11-12']",
+    "expected": "",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka",
+    "check": "messages on raw-ticks vs simulator",
+    "status": "FAIL",
+    "observed": "7,500 of 200,962,519 (0.0000)",
+    "expected": "1.000 (published = processed - dropped by injection)",
+    "hint": "messages were lost between the simulator and Kafka (the writer is asynchronous: check the simulator's 'acknowledged by Kafka' count)"
+  },
+  {
+    "stage": "Kafka: raw messages (simulator's wire format)",
+    "check": "equity messages with a last price",
+    "status": "PASS",
+    "observed": "2.31% of 6,835 sampled",
+    "expected": "about 4% of equity rows are trades",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka: raw messages (simulator's wire format)",
+    "check": "per-instrument time going back by more than 1 s",
+    "status": "PASS",
+    "observed": "0.0000%",
+    "expected": "about 0 (one producer worker per instrument)",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka",
+    "check": "vectors per raw message",
+    "status": "FAIL",
+    "observed": "167,471,602 / 7,500 = 22329.547",
+    "expected": "about 0.8 (equities are about 82% of rows; index rows and rejected messages emit nothing)",
+    "hint": "far below: the handler is lagging or dropping (it may still be running), or the wrong SecType filter; above 0.95: index rows are not being filtered"
+  },
+  {
+    "stage": "Kafka: feature vectors",
+    "check": "vectors flagged as trades",
+    "status": "PASS",
+    "observed": "5.33% of 12,000 sampled",
+    "expected": "about 4%",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka: feature vectors",
+    "check": "quote rows with a price z-score",
+    "status": "PASS",
+    "observed": "0.000%",
+    "expected": "0 (a quote update says nothing about price)",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka: feature vectors",
+    "check": "trade rows with a non-zero price z-score",
+    "status": "PASS",
+    "observed": "98.1%",
+    "expected": "most trades (after the first two of each instrument)",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka: feature vectors",
+    "check": "non-finite feature values (NaN/Inf)",
+    "status": "PASS",
+    "observed": "0",
+    "expected": "0",
+    "hint": ""
+  },
+  {
+    "stage": "Kafka: feature vectors",
+    "check": "slow timing z-score beyond 3",
+    "status": "PASS",
+    "observed": "2.1%",
+    "expected": "a few percent (about 1-2% measured)",
+    "hint": ""
+  },
+  {
+    "stage": "Feed-handler evaluation logs",
+    "check": "silence alerts per 1000 vectors",
+    "status": "WARN",
+    "observed": "1,374,815 alerts, 8.21 per 1000 vectors",
+    "expected": "about 1 (the quantile rule)",
+    "hint": "far more: the rule is firing on ordinary gaps (mean-multiple rule? clock jitter? overnight gap?)"
+  },
+  {
+    "stage": "Feed-handler evaluation logs",
+    "check": "silence triggers",
+    "status": "PASS",
+    "observed": "{'scan': 1253099, 'resume': 121716}",
+    "expected": "",
+    "hint": ""
+  },
+  {
+    "stage": "Feed-handler evaluation logs",
+    "check": "end-of-stream (flush) alerts",
+    "status": "PASS",
+    "observed": "0",
+    "expected": "few (silences still open at shutdown)",
+    "hint": ""
+  },
+  {
+    "stage": "Feed-handler evaluation logs",
+    "check": "validation alerts by type",
+    "status": "PASS",
+    "observed": "{'TIMESTAMP_INVERSION': 20825}",
+    "expected": "",
+    "hint": ""
+  },
+  {
+    "stage": "Feed-handler evaluation logs",
+    "check": "validation alerts beyond the injected inversions",
+    "status": "PASS",
+    "observed": "516 of 20,825 alerts (0.0003% of vectors)",
+    "expected": "about 0 on real data (natural backward steps are under 1 s)",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "score rows",
+    "status": "PASS",
+    "observed": "16,727,160",
+    "expected": "> 0",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "scores vs vectors / stride",
+    "status": "PASS",
+    "observed": "16,727,160 vs 16,747,160 (0.999)",
+    "expected": "about 1.0 (one vector in ten is scored, after each model's warm-up)",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "non-finite scores",
+    "status": "PASS",
+    "observed": "0",
+    "expected": "0",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "share of scores with z >= 2",
+    "status": "PASS",
+    "observed": "2.27%",
+    "expected": "a few percent (about 2.3% for a normal z)",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "spread of z-scores",
+    "status": "PASS",
+    "observed": "2.107",
+    "expected": "a standard deviation near 1",
+    "hint": ""
+  },
+  {
+    "stage": "Detector scores",
+    "check": "episode instruments present in the scores",
+    "status": "PASS",
+    "observed": "99.8%",
+    "expected": "most (instruments that never produced a scored vector are missing)",
+    "hint": ""
+  },
+  {
+    "stage": "Scores meet ground truth",
+    "check": "injected messages whose own vector was scored (by sequence number)",
+    "status": "PASS",
+    "observed": "9.9% of 15,595 episodes",
+    "expected": "about 10% (the stride)",
+    "hint": ""
+  }
+]
