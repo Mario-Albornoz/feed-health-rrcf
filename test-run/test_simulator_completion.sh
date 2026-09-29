@@ -1,5 +1,4 @@
 #!/bin/bash
-# Test: Verify simulator completes and stops gracefully after processing all files
 
 set -e
 
@@ -12,11 +11,10 @@ echo "Test: Simulator Completion and Graceful Shutdown"
 echo "============================================================"
 echo ""
 
-# Colors
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 cleanup() {
     echo ""
@@ -35,7 +33,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Step 1: Create small test CSV files
 echo "Step 1: Creating small test CSV files (100 rows each)..."
 cd "$SIMULATOR_DIR"
 
@@ -44,7 +41,6 @@ head -101 "data/debs2022-gc-trading-day-09-11-21.csv" > "data/test_completion_09
 
 echo "  ✓ Created test files"
 
-# Step 2: Create test config
 echo ""
 echo "Step 2: Creating test configuration..."
 
@@ -97,7 +93,6 @@ EOF
 
 echo "  ✓ Test config created"
 
-# Step 3: Ensure Kafka is running
 echo ""
 echo "Step 3: Ensuring Kafka is running..."
 cd "$PROJECT_ROOT"
@@ -108,7 +103,6 @@ if ! docker ps | grep thesis-kafka | grep -q "Up"; then
 fi
 echo "  ✓ Kafka is running"
 
-# Step 4: Run simulator with timeout
 echo ""
 echo "Step 4: Running simulator (timeout: 30s)..."
 echo ""
@@ -119,7 +113,6 @@ SIMULATOR_PID=$!
 
 echo "  Simulator PID: $SIMULATOR_PID"
 
-# Wait for completion with timeout
 TIMEOUT=30
 ELAPSED=0
 while kill -0 "$SIMULATOR_PID" 2>/dev/null; do
@@ -155,7 +148,6 @@ else
     exit 1
 fi
 
-# Step 5: Verify log messages
 echo ""
 echo "Step 5: Verifying simulator log messages..."
 
@@ -183,7 +175,6 @@ if ! grep -q "Wrote anomaly manifest" /tmp/test_simulator.log; then
 fi
 echo "  ✓ Found manifest write confirmation"
 
-# Step 6: Verify manifest file exists
 echo ""
 echo "Step 6: Verifying output files..."
 
@@ -193,7 +184,6 @@ else
     echo "  ⚠ injection_manifest.json not found (might be in different location)"
 fi
 
-# Success!
 echo ""
 echo "============================================================"
 echo "${GREEN}✓ ALL TESTS PASSED${NC}"

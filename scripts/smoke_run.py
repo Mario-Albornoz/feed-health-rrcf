@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-Smoke run: push a slice of real data through the real pipeline, then check it.
-
-Runs the actual simulator, Kafka, feed-handler and RRCF detector on a slice of one day file
-(default 600,000 rows), with all four phases injected into it, using isolated Kafka topics
-(smoke-*) and its own output directory. Then it runs the run verifier and the evaluation
-on what came out. It answers "does the whole chain work, and where does it not?" in a few
-minutes, before committing to a multi-day run.
-
-It also checks the sampled-vector recording: the live detector records the vectors that pass
-the stride (rrcf and zscore run live), then the recording is replayed through the same models
-in a separate run, which must score exactly the same rows (and, for the deterministic zscore,
-the same scores) as the live run. This is what makes models run in separate passes comparable.
-
-Needs Kafka on localhost:9092 (make kafka-up) and the detector venv:
-
-    rrcf-detector/venv/bin/python scripts/smoke_run.py [--rows 600000] [--keep-topics]
-
-Everything lands in results/smoke_<timestamp>/ (report.txt, verify.json, evaluation/, logs).
-Nothing outside that directory and the smoke-* topics is touched; the tracked simulator
-binary is not rebuilt.
-"""
 
 import argparse
 import copy
@@ -51,9 +29,6 @@ def run(cmd, **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, check=True, **kw)
 
 
-# ----------------------------------------------------------------------------- topics
-
-
 def admin():
     from confluent_kafka.admin import AdminClient
 
@@ -75,7 +50,7 @@ def delete_topics(names) -> None:
     for n, f in a.delete_topics(list(names)).items():
         try:
             f.result(timeout=20)
-        except Exception:  # noqa: BLE001 - best effort cleanup
+        except Exception:  # noqa: BLE001
             pass
 
 
@@ -87,7 +62,6 @@ def end_offsets(topic: str) -> int:
 
 
 def group_lag(group: str, topic: str) -> int:
-    """Messages on `topic` not yet committed by consumer group `group`."""
     from confluent_kafka import Consumer, TopicPartition
 
     c = Consumer({"bootstrap.servers": BROKER, "group.id": group, "enable.auto.commit": False})
@@ -104,12 +78,7 @@ def group_lag(group: str, topic: str) -> int:
         c.close()
 
 
-# ------------------------------------------------------------------------------- data
-
-
 def make_slice(src: Path, dest: Path, first_line: int, rows: int) -> tuple:
-    """Copy the file's header block and `rows` data rows from `first_line`. Returns the
-    first and last update time (seconds since midnight) of the slice."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     header_lines = 0
     with open(src, "rb") as f:
@@ -140,13 +109,10 @@ def hms(sec: int) -> str:
     return f"{sec // 3600:02d}:{(sec % 3600) // 60:02d}:{sec % 60:02d}"
 
 
-# ---------------------------------------------------------------------------- configs
-
-
 def write_configs(work: Path, topics: dict, span: tuple, day: str, ids: dict) -> dict:
     t0, t1 = span
     length = t1 - t0
-    q = lambda f: t0 + int(length * f)  # noqa: E731 - readable enough here
+    q = lambda f: t0 + int(length * f)  # noqa: E731
 
     sim = yaml.safe_load((SIM / "config/simulator-with-anomalies.yaml").read_text())
     sim["kafka"]["topic"] = topics["raw"]
@@ -160,7 +126,6 @@ def write_configs(work: Path, topics: dict, span: tuple, day: str, ids: dict) ->
         a[key]["enabled"] = True
         a[key]["date_filter"] = [day]
         a[key]["window"] = {"start": hms(s), "end": hms(e)}
-    # dense injection so a small slice yields episodes; quota needs an earlier day, so off
     for st in a["phase2_contextual_anomalies"]["strategies"]:
         st["probability"] = 0.02
     a["phase2_contextual_anomalies"]["per_instrument_quota"] = {"min_episodes": 0}
@@ -169,7 +134,7 @@ def write_configs(work: Path, topics: dict, span: tuple, day: str, ids: dict) ->
         st["probability"] = 0.02 if st["type"] == "implausible_price" else 0.005
     a["phase4_point_failures"]["per_instrument_quota"] = {"min_episodes": 0}
     (work / "sim").mkdir(parents=True, exist_ok=True)
-    (work / "sim" / "data").mkdir(exist_ok=True)  # the manifest is written to ./data
+    (work / "sim" / "data").mkdir(exist_ok=True)
     (work / "sim" / "config.yaml").write_text(yaml.safe_dump(sim, sort_keys=False))
 
     h = yaml.safe_load((HANDLER / "config/aggregator.yaml").read_text())
@@ -183,13 +148,10 @@ def write_configs(work: Path, topics: dict, span: tuple, day: str, ids: dict) ->
     d = yaml.safe_load((DETECTOR / "config/baselines.yaml").read_text())
     d["kafka"].update(input_topic=topics["vectors"], output_topic=topics["scores"], consumer_group_id=ids["detector"],
                       auto_offset_reset="earliest")
-    d["models"] = ["rrcf", "zscore"]  # zscore is deterministic: its replay must equal its live scores
+    d["models"] = ["rrcf", "zscore"]
     (work / "detector").mkdir(parents=True, exist_ok=True)
     (work / "detector" / "baselines.yaml").write_text(yaml.safe_dump(d, sort_keys=False))
     return {"windows": {k: (hms(s), hms(e)) for k, (s, e) in windows.items()}}
-
-
-# ------------------------------------------------------------------------- processes
 
 
 def wait_for(path: Path, text: str, timeout: float, proc: subprocess.Popen, what: str) -> None:
@@ -215,8 +177,6 @@ def stop(proc: subprocess.Popen, name: str, timeout: float = 30) -> None:
 
 
 def wait_lag(group: str, topic: str, timeout: float) -> int:
-    """Wait until a consumer group has committed everything on the topic (two polls in a
-    row, since offsets are auto-committed every few seconds). Returns the remaining lag."""
     deadline = time.time() + timeout
     zero = 0
     lag = -1
@@ -231,7 +191,6 @@ def wait_lag(group: str, topic: str, timeout: float) -> int:
 
 
 def wait_stable(fn, quiet_seconds: float, timeout: float, what: str) -> int:
-    """Poll fn() until its value stops changing for `quiet_seconds`."""
     deadline = time.time() + timeout
     last, since = None, time.time()
     while time.time() < deadline:
@@ -246,8 +205,6 @@ def wait_stable(fn, quiet_seconds: float, timeout: float, what: str) -> int:
 
 
 def check_sample_and_replay(work: Path, topics: dict, models: list) -> list:
-    """Check the recorded vector sample, then replay it through `models` in a separate run
-    and compare with the live scores. Returns [(check, passed, detail), ...]."""
     import numpy as np
     import pyarrow.parquet as pq
 
@@ -300,13 +257,10 @@ def check_sample_and_replay(work: Path, topics: dict, models: list) -> list:
         check(f"{m}: replay scores exactly the rows the live run scored",
               live[cols].reset_index(drop=True).equals(rep[cols].reset_index(drop=True)),
               f"live {len(live):,} rows, replay {len(rep):,} rows")
-        if m == "zscore":  # deterministic model: the scores themselves must match
+        if m == "zscore":
             check("zscore: replay scores equal the live scores",
                   np.array_equal(live["z_score"].to_numpy(), rep["z_score"].to_numpy()))
     return results
-
-
-# ------------------------------------------------------------------------------ main
 
 
 def main() -> int:
@@ -335,7 +289,7 @@ def main() -> int:
         log(f"slicing {args.rows:,} rows of {Path(args.day_file).name} from line {args.first_line:,}...")
         day_file = Path(args.day_file)
         span = make_slice(day_file, work / "data" / day_file.name, args.first_line, args.rows)
-        day = f"{day_file.stem[-8:-6]}-{day_file.stem[-5:-3]}-20{day_file.stem[-2:]}"  # 10-11-2021
+        day = f"{day_file.stem[-8:-6]}-{day_file.stem[-5:-3]}-20{day_file.stem[-2:]}"
         log(f"slice covers {hms(span[0])} - {hms(span[1])} on {day}")
         info = write_configs(work, topics, span, day, ids)
         for k, v in info["windows"].items():
@@ -380,7 +334,6 @@ def main() -> int:
         stop(handler, "the feed-handler")
 
         log("waiting for the detector to drain...")
-        # run_multi_model.py consumes with group.id = <consumer_group_id>-multi
         wait_lag(ids["detector"] + "-multi", topics["vectors"], 300)
         stop(detector, "the detector", timeout=180)
 
@@ -390,12 +343,10 @@ def main() -> int:
             [{"check": c, "passed": ok, "detail": d} for c, ok, d in sample_checks], indent=2))
         sample_ok = all(ok for _, ok, _ in sample_checks)
 
-        # ------------------------------------------------------------- verify and evaluate
         log("verifying the run...")
         sys.path.insert(0, str(DETECTOR / "scripts"))
         import verify_run
 
-        # the manifest is written to <cwd>/data by the simulator
         manifest = work / "sim/data/injection_manifest.json"
         scores = work / "detector/scores_rrcf.parquet"
         rc = verify_run.main([

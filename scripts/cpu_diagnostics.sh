@@ -1,21 +1,11 @@
 #!/bin/bash
-#
-# CPU Diagnostics Script
-# Check for CPU pressure, throttling, and past process kills
-#
-# Usage: ./scripts/cpu_diagnostics.sh [--watch] [--full]
-#   --watch: Continuous monitoring mode
-#   --full:  Include slow system log queries (may take 30+ seconds)
-#
 
-# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Check if watch mode
 WATCH_MODE=false
 FULL_MODE=false
 
@@ -34,8 +24,7 @@ print_section() {
 
 check_cpu_current() {
     print_section "Current CPU Status"
-    
-    # CPU cores
+
     local ncpu=$(sysctl -n hw.ncpu)
     local cpu_freq=$(sysctl -n hw.cpufrequency 2>/dev/null)
     if [ -n "$cpu_freq" ] && [ "$cpu_freq" != "0" ]; then
@@ -44,20 +33,17 @@ check_cpu_current() {
     else
         echo -e "  CPU Cores: ${GREEN}${ncpu}${NC}"
     fi
-    
-    # Current usage
+
     local cpu_info=$(top -l 1 -n 0 | grep "CPU usage")
     local cpu_user=$(echo "$cpu_info" | awk '{print $3}')
     local cpu_sys=$(echo "$cpu_info" | awk '{print $5}')
     local cpu_idle=$(echo "$cpu_info" | awk '{print $7}')
     
     echo -e "  Usage: User ${cpu_user} | System ${cpu_sys} | Idle ${cpu_idle}"
-    
-    # Load average
+
     local load=$(sysctl -n vm.loadavg | awk '{print $2, $3, $4}')
     echo -e "  Load Avg: ${load}"
-    
-    # Calculate load percentage
+
     local load_1min=$(echo "$load" | awk '{print $1}')
     local load_pct=$(awk "BEGIN {printf \"%.1f\", ($load_1min / $ncpu) * 100}")
     
@@ -74,19 +60,16 @@ check_cpu_current() {
 
 check_thermal_status() {
     print_section "Thermal & Power Status"
-    
-    # Thermal checking skipped - pmset can be slow
+
     echo -e "  ${YELLOW}CPU Throttling: Check disabled (pmset -g thermlog can be slow)${NC}"
     echo -e "  ${YELLOW}To check manually: pmset -g thermlog | grep CPU_Scheduler_Limit${NC}"
-    
-    # Power assertions - quick check
+
     if pmset -g assertions 2>/dev/null | grep -q "PreventUserIdleSystemSleep"; then
         echo -e "  ${GREEN}✓ System sleep prevented (good for long-running tasks)${NC}"
     else
         echo -e "  ${YELLOW}⚠ System may sleep during idle periods${NC}"
     fi
-    
-    # Battery status (if laptop) - quick check
+
     local battery=$(pmset -g batt 2>/dev/null | grep "InternalBattery" | head -1 || echo "")
     if [ -n "$battery" ]; then
         if echo "$battery" | grep -q "discharging"; then
@@ -134,8 +117,7 @@ check_pipeline_processes() {
                 
                 echo -e "  ${GREEN}✓${NC} $name (PID: $pid)"
                 echo -e "    CPU: ${cpu}% | Memory: ${mem}% | Threads: ${threads} | Uptime: ${time}"
-                
-                # Warn if high CPU
+
                 if [ -n "$cpu" ] && awk "BEGIN {exit !($cpu > 150)}"; then
                     echo -e "    ${YELLOW}⚠ High CPU usage${NC}"
                 fi
@@ -163,8 +145,7 @@ check_recent_kills() {
     fi
     
     echo -e "  ${YELLOW}Checking system logs (this can be slow, 15-30 seconds)...${NC}"
-    
-    # macOS log show is very slow, so we limit the scope
+
     local kills=$(log show --predicate 'eventMessage contains "signal" OR eventMessage contains "terminated"' --last 10m --style compact 2>/dev/null | grep -E "simulator|handler|detector|python" | head -10 || echo "")
     
     if [ -n "$kills" ]; then
@@ -200,8 +181,7 @@ check_memory_pressure() {
             echo -e "  ${YELLOW}Unknown (level $mem_pressure)${NC}"
             ;;
     esac
-    
-    # Memory stats
+
     local mem_total=$(sysctl -n hw.memsize | awk '{printf "%.1f", $1/1024/1024/1024}')
     local mem_wired=$(vm_stat | grep "Pages wired down" | awk '{print $4}' | tr -d '.' | awk '{printf "%.1f", $1*4096/1024/1024/1024}')
     local mem_active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.' | awk '{printf "%.1f", $1*4096/1024/1024/1024}')
@@ -220,8 +200,7 @@ check_disk_io() {
     
     if [ -n "$iostat_output" ]; then
         echo "  $iostat_output"
-        
-        # Check if disk is bottleneck  
+
         local disk_util=$(echo "$iostat_output" | awk '{print $NF}' | tr -d '%')
         if [ -n "$disk_util" ] && awk "BEGIN {exit !($disk_util > 80)}"; then
             echo -e "  ${RED}⚠ High disk utilization (>80%)${NC}"
@@ -234,7 +213,6 @@ check_disk_io() {
     echo ""
 }
 
-# Main execution
 if [ "$WATCH_MODE" = true ]; then
     while true; do
         clear

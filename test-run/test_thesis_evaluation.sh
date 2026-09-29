@@ -1,24 +1,18 @@
 #!/bin/bash
 
-# Thesis Evaluation Integration Test
-# Tests the complete evaluation pipeline end-to-end
-
 set -e
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Test configuration
-TEST_DURATION=60  # Run for 60 seconds
+TEST_DURATION=60
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DIR="$PROJECT_ROOT/test-run"
 TEST_DATA_DIR="$TEST_DIR/thesis_test_data"
 
-# Cleanup function
 cleanup() {
     echo ""
     echo -e "${YELLOW}Cleaning up test processes...${NC}"
@@ -29,7 +23,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Create test data directory
 mkdir -p "$TEST_DATA_DIR"
 
 echo "════════════════════════════════════════════════════════════"
@@ -38,11 +31,9 @@ echo "  $(date)"
 echo "════════════════════════════════════════════════════════════"
 echo ""
 
-# Test 1: Check Prerequisites
 echo -e "${BLUE}Test 1: Checking Prerequisites${NC}"
 echo ""
 
-# Check Kafka
 if docker ps | grep -q "thesis-kafka"; then
     if docker ps | grep "thesis-kafka" | grep -q "Up"; then
         echo -e "${GREEN}✓${NC} Kafka is running"
@@ -57,7 +48,6 @@ else
     exit 1
 fi
 
-# Check Go binaries
 if [ -f "$PROJECT_ROOT/price-feed-simulator/bin/simulator" ]; then
     echo -e "${GREEN}✓${NC} Simulator binary exists"
 else
@@ -74,7 +64,6 @@ else
     exit 1
 fi
 
-# Check Python venv
 if [ -f "$PROJECT_ROOT/rrcf-detector/venv/bin/python3" ]; then
     echo -e "${GREEN}✓${NC} Python venv exists"
 else
@@ -83,7 +72,6 @@ else
     exit 1
 fi
 
-# Check data files
 data_count=$(ls -1 "$PROJECT_ROOT/price-feed-simulator/data/"*.csv 2>/dev/null | wc -l)
 if [ "$data_count" -gt 0 ]; then
     echo -e "${GREEN}✓${NC} Data files present ($data_count files)"
@@ -95,72 +83,60 @@ fi
 
 echo ""
 
-# Test 2: Test Simulator with Anomaly Injection
 echo -e "${BLUE}Test 2: Testing Simulator Ground Truth Generation${NC}"
 echo ""
 
-# Clean previous test data
 rm -f "$PROJECT_ROOT/price-feed-simulator/anomaly_log.csv"
 rm -f "$PROJECT_ROOT/price-feed-simulator/injection_manifest.json"
 rm -f "$PROJECT_ROOT/price-feed-simulator/data/anomaly_log.csv"
 rm -f "$PROJECT_ROOT/price-feed-simulator/data/injection_manifest.json"
 
-# Check if anomaly config exists
 if [ ! -f "$PROJECT_ROOT/price-feed-simulator/config/simulator-with-anomalies.yaml" ]; then
     echo -e "${RED}✗${NC} Anomaly config not found"
     exit 1
 fi
 
-# Start simulator briefly with anomaly config
 echo "  Starting simulator with anomaly injection for 15 seconds..."
 cd "$PROJECT_ROOT"
 make stop-all > /dev/null 2>&1 || true
 sleep 1
 
-# Run simulator with anomaly config in background
 cd "$PROJECT_ROOT/price-feed-simulator"
 timeout 15s ./bin/simulator -config config/simulator-with-anomalies.yaml > /dev/null 2>&1 || true
 
 sleep 2
 
-# Check if ground truth files were created (in simulator directory)
 if [ -f "$PROJECT_ROOT/price-feed-simulator/anomaly_log.csv" ]; then
     echo -e "${GREEN}✓${NC} anomaly_log.csv created"
-    
-    # Check if it has content
+
     line_count=$(wc -l < "$PROJECT_ROOT/price-feed-simulator/anomaly_log.csv")
     if [ "$line_count" -gt 1 ]; then
         echo -e "${GREEN}✓${NC} CSV has $line_count lines"
     else
         echo -e "${YELLOW}⚠${NC} CSV has only header (no anomalies injected in time window)"
     fi
-    
-    # Copy to data directory for consistency
+
     cp "$PROJECT_ROOT/price-feed-simulator/anomaly_log.csv" "$PROJECT_ROOT/price-feed-simulator/data/" 2>/dev/null || true
 else
     echo -e "${YELLOW}⚠${NC} anomaly_log.csv not created (simulator may not have reached injection window)"
     echo "      Creating empty file for testing..."
-    # Create a minimal test CSV with header
     echo "Timestamp,InstrumentID,Exchange,AnomalyType,Phase,OriginalBid,OriginalAsk,OriginalLast,ModifiedBid,ModifiedAsk,ModifiedLast,Dropped" > "$PROJECT_ROOT/price-feed-simulator/data/anomaly_log.csv"
 fi
 
 if [ -f "$PROJECT_ROOT/price-feed-simulator/injection_manifest.json" ]; then
     echo -e "${GREEN}✓${NC} injection_manifest.json created"
-    
-    # Validate JSON
+
     if python3 -m json.tool "$PROJECT_ROOT/price-feed-simulator/injection_manifest.json" > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Manifest is valid JSON"
     else
         echo -e "${RED}✗${NC} Manifest is invalid JSON"
         exit 1
     fi
-    
-    # Copy to data directory for consistency
+
     cp "$PROJECT_ROOT/price-feed-simulator/injection_manifest.json" "$PROJECT_ROOT/price-feed-simulator/data/" 2>/dev/null || true
 else
     echo -e "${YELLOW}⚠${NC} injection_manifest.json not created (short run)"
     echo "      Creating minimal manifest for testing..."
-    # Create a minimal test manifest
     cat > "$PROJECT_ROOT/price-feed-simulator/data/injection_manifest.json" << 'MANIFEST_EOF'
 {
   "experiment_id": "test_run",
@@ -181,14 +157,11 @@ fi
 
 echo ""
 
-# Test 3: Test Detector Parquet Output
 echo -e "${BLUE}Test 3: Testing Detector Parquet Output${NC}"
 echo ""
 
-# Clean previous test data
 rm -f "$TEST_DATA_DIR/test_scores.parquet"
 
-# Create a minimal test config
 cat > "$TEST_DATA_DIR/test_config.yaml" << 'EOF'
 detector:
   window_size: 100
@@ -227,7 +200,6 @@ stream_collector:
   topic: "anomaly-scores"
 EOF
 
-# Test Python imports
 echo "  Testing Python imports..."
 if cd "$PROJECT_ROOT/rrcf-detector" && ./venv/bin/python3 -c "
 from src.detection.generic_worker import ParquetWriter
@@ -244,7 +216,6 @@ from src.baselines import RRCFDetectorAdapter, ZScoreDetector
     exit 1
 fi
 
-# Test ParquetWriter class directly
 echo "  Testing ParquetWriter class..."
 cd "$PROJECT_ROOT/rrcf-detector" && ./venv/bin/python3 << 'PYEOF'
 import sys
@@ -283,8 +254,7 @@ PYEOF
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓${NC} ParquetWriter works"
-    
-    # Verify the file
+
     if [ -f "$TEST_DATA_DIR/test_writer.parquet" ]; then
         echo -e "${GREEN}✓${NC} Parquet file created"
     else
@@ -298,11 +268,9 @@ fi
 
 echo ""
 
-# Test 4: Test Evaluation Script
 echo -e "${BLUE}Test 4: Testing Evaluation Script${NC}"
 echo ""
 
-# Check if evaluation script exists and is executable
 if [ -x "$PROJECT_ROOT/rrcf-detector/scripts/evaluate_thesis.py" ]; then
     echo -e "${GREEN}✓${NC} Evaluation script exists and is executable"
 else
@@ -310,7 +278,6 @@ else
     chmod +x "$PROJECT_ROOT/rrcf-detector/scripts/evaluate_thesis.py"
 fi
 
-# Test evaluation script help
 echo "  Testing evaluation script..."
 if cd "$PROJECT_ROOT/rrcf-detector" && ./venv/bin/python3 scripts/evaluate_thesis.py --help > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} Evaluation script runs"
@@ -320,7 +287,6 @@ else
     exit 1
 fi
 
-# Test with mock data (if ground truth exists from Test 2)
 if [ -f "$PROJECT_ROOT/price-feed-simulator/data/anomaly_log.csv" ] && \
    [ -f "$PROJECT_ROOT/price-feed-simulator/data/injection_manifest.json" ] && \
    [ -f "$TEST_DATA_DIR/test_writer.parquet" ]; then
@@ -331,8 +297,7 @@ if [ -f "$PROJECT_ROOT/price-feed-simulator/data/anomaly_log.csv" ] && \
         --ground-truth-manifest ../price-feed-simulator/data/injection_manifest.json \
         --scores ../test-run/thesis_test_data/test_writer.parquet \
         --output ../test-run/thesis_test_data/eval_output > /dev/null 2>&1 || true
-    
-    # Check if any output was generated (may fail due to mismatched data)
+
     if [ -d "$TEST_DATA_DIR/eval_output" ]; then
         echo -e "${GREEN}✓${NC} Evaluation script executed"
         
@@ -348,13 +313,11 @@ fi
 
 echo ""
 
-# Test 5: Test Makefile Targets
 echo -e "${BLUE}Test 5: Testing Makefile Targets${NC}"
 echo ""
 
 cd "$PROJECT_ROOT"
 
-# Test help target
 if make help | grep -q "Thesis Evaluation"; then
     echo -e "${GREEN}✓${NC} Thesis evaluation targets in help"
 else
@@ -362,7 +325,6 @@ else
     exit 1
 fi
 
-# Check if targets exist
 for target in run-thesis-experiment evaluate-thesis thesis-full; do
     if make -n $target > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Target '$target' exists"
@@ -374,11 +336,9 @@ done
 
 echo ""
 
-# Test 6: Quick End-to-End Test (30 seconds)
 echo -e "${BLUE}Test 6: Quick End-to-End Test (30 seconds)${NC}"
 echo ""
 
-# Clean test area
 rm -rf "$TEST_DATA_DIR/e2e"
 mkdir -p "$TEST_DATA_DIR/e2e"
 
@@ -400,7 +360,6 @@ fi
 echo "  Starting detector (writing to test parquet)..."
 cd "$PROJECT_ROOT/rrcf-detector"
 
-# Start detector with short timeout and parquet output
 timeout 15s ./venv/bin/python3 scripts/run_multi_model.py \
     --config config/baselines.yaml \
     --output ../test-run/thesis_test_data/e2e/scores.parquet > /dev/null 2>&1 &
@@ -414,7 +373,6 @@ timeout 10s ./bin/simulator > /dev/null 2>&1 || true
 
 sleep 2
 
-# Check outputs
 echo ""
 echo "  Checking outputs..."
 
@@ -432,8 +390,7 @@ fi
 
 if [ -f "$TEST_DATA_DIR/e2e/scores.parquet" ]; then
     echo -e "${GREEN}✓${NC} Scores parquet exists"
-    
-    # Check parquet file size
+
     size=$(wc -c < "$TEST_DATA_DIR/e2e/scores.parquet")
     if [ "$size" -gt 1000 ]; then
         echo -e "${GREEN}✓${NC} Scores parquet has data ($size bytes)"
@@ -444,7 +401,6 @@ else
     echo -e "${YELLOW}⚠${NC} Scores parquet not found (detector may not have flushed)"
 fi
 
-# Cleanup
 echo ""
 echo "  Cleaning up..."
 kill $DETECTOR_PID 2>/dev/null || true
@@ -453,7 +409,6 @@ make stop-all > /dev/null 2>&1 || true
 
 echo ""
 
-# Summary
 echo "════════════════════════════════════════════════════════════"
 echo "  Test Summary"
 echo "════════════════════════════════════════════════════════════"

@@ -1,4 +1,3 @@
-# TODO: add last step for the rrcf setup.
 .PHONY: help setup clean kafka-up kafka-down kafka-logs kafka-status \
         build-simulator build-handler setup-detector \
         run-handler run-detector run-simulator run-simulator-foreground \
@@ -7,71 +6,43 @@
         kafka-reset drain integration-test smoke-run describe-dataset \
         run-thesis-experiment archive-run verify-run evaluate-thesis compare-models replay-models thesis-full
 
-# Default target
 .DEFAULT_GOAL := help
 
-# Color output
 BLUE := \033[0;34m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 RED := \033[0;31m
-NC := \033[0m # No Color
+NC := \033[0m
 
-# Project directories
 PROJECT_ROOT := $(shell pwd)
 SIMULATOR_DIR := price-feed-simulator
 HANDLER_DIR := feed-handler
 DETECTOR_DIR := rrcf-detector
 
-# Binary paths
 SIMULATOR_BIN := $(SIMULATOR_DIR)/bin/simulator
 HANDLER_BIN := $(HANDLER_DIR)/aggregator
 
-# PID files for process management
 PIDS_DIR := $(PROJECT_ROOT)/.pids
 HANDLER_PID := $(PIDS_DIR)/handler.pid
 SIMULATOR_PID := $(PIDS_DIR)/simulator.pid
 
-# Shell test, exit 0 when the pid file $(1) holds a positive pid of a live process. A pid file
-# containing 0 (the disabled stream collector, see scripts/start_detector.sh) must never reach
-# `kill`: `kill 0` signals the caller's whole process group, which took make, the handler and
-# the detector down together at the end of a thesis run. Empty or garbage files count as dead.
-# Regression test: test-run/test_stop_all.sh (make test-stop-all)
 pid_alive = [ "$$(cat $(1) 2>/dev/null)" -gt 0 ] 2>/dev/null && kill -0 "$$(cat $(1))" 2>/dev/null
 
-# Log directory
 LOGS_DIR := $(PROJECT_ROOT)/logs
 
-# Thesis run: python of the detector venv, where a run's files are archived, and the
-# evaluation settings. Override on the command line, e.g.
-#   make evaluate-thesis RUN_DIR=results/thesis_20260921_101500 TARGET_FAR=0.5
-#   make evaluate-thesis RUN_DIR=results/thesis_20260923_003839 SCORE_COLUMN=z_score   (old protocol)
 PY := $(DETECTOR_DIR)/venv/bin/python3
-# cross-checks an archived vector sample against the runner's own summary of the run
 CHECK_SAMPLE := $(DETECTOR_DIR)/scripts/check_vector_sample.py
 RESULTS_DIR := results
 RUN_STAMP := $(shell date +%Y%m%d_%H%M%S)
 NEW_RUN_DIR := $(RESULTS_DIR)/thesis_$(RUN_STAMP)
-# where archive-run puts a run's inputs (must be under RESULTS_DIR: "latest" links to its name)
 ARCHIVE_DIR ?= $(NEW_RUN_DIR)
-# the run that verify-run / evaluate-thesis work on (run-thesis-experiment repoints "latest")
 RUN_DIR ?= $(RESULTS_DIR)/latest
-# Kafka CLI tools run inside the broker container (no extra installs needed)
 KAFKA_EXEC := docker exec thesis-kafka
 KAFKA_BS := localhost:9092
-# Consumer groups of the two consumers. They must match consumer_group in
-# feed-handler/config/aggregator.yaml and consumer_group_id + "-multi" in
-# rrcf-detector/config/baselines.yaml (run_multi_model.py appends "-multi").
 HANDLER_GROUP := aggregator-group
 DETECTOR_GROUP := rrcf-detector-baselines-multi
 # how long "make drain" waits in total (seconds)
 DRAIN_TIMEOUT ?= 21600
-# Evaluation settings (see docs/FIX_PLAN.md, fix A).
-# SCORE_COLUMN: the column of scores_<model>.parquet that alerts are thresholded on.
-#   raw_score (default): each model's own score; thresholds are set as a false-alarm budget
-#     on the clean days, so models on different scales are compared at the same budget.
-#   z_score: the detector's running normalisation, with the fixed THRESHOLDS below; this
-#     reproduces the older evaluations (it collapses after one extreme score).
 SCORE_COLUMN ?= raw_score
 # alert threshold is picked on the clean days at this many alerts per 1000 scored vectors
 TARGET_FAR ?= 1.0
@@ -461,18 +432,6 @@ describe-dataset: ## Profile the dataset (both directories, about 15 minutes) ->
 	@$(PY) scripts/describe_dataset.py --data-dir $(SIMULATOR_DIR)/data --output docs/dataset_profile/raw
 	@echo "$(GREEN)✓ Profiles written to docs/dataset_profile/$(NC)"
 
-# One thesis run, start to finish. Order matters:
-#   1. rebuild the two Go binaries (a stale binary is the easiest way to waste a run)
-#   2. remove the previous run's outputs and reset Kafka (topics + committed offsets)
-#   3. handler, detector, monitor, then the simulator in the foreground (stride and playback
-#      speed come from the configs and are not touched here)
-#   4. "drain": wait until the handler and detector have processed everything the simulator
-#      published. Stopping earlier throws away the unprocessed tail of the run.
-#   5. stop everything gracefully (the detector must close its parquet file, the handler
-#      runs its final silence scan), archive the run under results/thesis_<stamp>/inputs
-#      with the configs and git revisions (the separate target archive-run, which can be
-#      repeated by hand), and run the verifier.
-# Nothing is committed or pushed; stage-by-stage problems show up in the verifier report.
 run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/thesis_<stamp>, verify
 	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(BLUE)  Thesis Evaluation Experiment  ($(RUN_STAMP))$(NC)"
@@ -563,16 +522,6 @@ drain: ## Wait until the handler and detector have processed everything the simu
 	[ "$$PREV" -gt 0 ] || { echo "$(RED)✗ the detector wrote no scores to $(DETECTOR_DIR)/data (logs/detector-multi.log)$(NC)"; exit 1; }; \
 	echo "$(GREEN)✓ Everything the simulator published has been processed$(NC)"
 
-# Copy a finished run's raw outputs from the module directories into ARCHIVE_DIR/inputs: the
-# simulator's ground truth, the handler's alert logs, the scores, the logs, the configs and the
-# git revisions; then repoint results/latest. It is a separate target so it can be repeated on
-# its own if the end of run-thesis-experiment fails:
-#     make archive-run ARCHIVE_DIR=results/thesis_<stamp>      (default: a new thesis_<now> dir)
-# Run it BEFORE the next run-thesis-experiment, which deletes these files (clean-output-files).
-# It copies everything it can, then exits 1 if an essential file was missing. It refuses to
-# overwrite an archive whose scores file has a different size (a different run) unless FORCE=1.
-# versions.txt records the repositories as they are when this runs. If you run it by hand
-# long after the run, uncommitted-file counts may differ from what was used.
 archive-run: ## Copy the last run's outputs, logs, configs and git revisions into ARCHIVE_DIR/inputs (default: new results/thesis_<stamp>)
 	@echo "$(YELLOW)Archiving the run to $(ARCHIVE_DIR)/inputs ...$(NC)"
 	@for f in $(DETECTOR_DIR)/data/*.parquet $(DETECTOR_DIR)/data/vectors/*.parquet; do \
@@ -624,15 +573,6 @@ archive-run: ## Copy the last run's outputs, logs, configs and git revisions int
 		echo "$(RED)✗ Archive incomplete: $(ARCHIVE_DIR)/inputs is missing files (see above)$(NC)"; exit 1; \
 	fi; \
 	echo "$(GREEN)✓ Archived; $(RESULTS_DIR)/latest -> $(notdir $(ARCHIVE_DIR))$(NC)"
-
-# archive-run, drain, verify-run and evaluate-thesis are model-agnostic: they work on every
-# *.parquet the detector wrote to its data/ dir (scores_<model>.parquet -> model "<model>").
-# MODEL=<name> restricts verify-run / evaluate-thesis to one model. A failure on one model does
-# not stop the others; the target exits 1 at the end if any model failed.
-# Still hardcoded / not covered (PROPOSAL, not active): clean-output-files only deletes the five
-# known scores_*.parquet names (a new detector's file would survive into the next run:
-# `rm -f ./rrcf-detector/data/*.parquet` would cover it), and test-run/test_archive_run.sh seeds
-# only scores_rrcf.parquet.
 
 verify-run: ## PASS/WARN/FAIL report per model on an archived run (RUN_DIR=..., MODEL=... optional)
 	@echo "$(BLUE)Verifying $(RUN_DIR) against the live Kafka topics...$(NC)"
@@ -686,14 +626,6 @@ evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=
 compare-models: ## Side-by-side table of every evaluated model (RUN_DIR=..., default results/latest) -> evaluation/comparison.{csv,md}
 	@python3 scripts/compare_models.py $(RUN_DIR) $(if $(MODELS),--models $(MODELS))
 
-# Score the vector sample recorded during a run with more models, one model (or a few) per
-# invocation, e.g. after a run that used zscore + isoforest live:
-#     make replay-models MODELS=rrcf                     (RUN_DIR defaults to results/latest)
-# The runner recorded the vectors that passed the stride (rrcf-detector/data/vectors/, archived
-# to <run>/inputs/vectors/vectors_sample.parquet by archive-run), so every model scores exactly
-# the same vectors, whichever run it is in. Scores land next to the others as
-# <run>/inputs/scores_<model>.parquet, where evaluate-thesis picks them up. An existing
-# scores file is never overwritten unless FORCE=1.
 replay-models: ## Score an archived run's recorded vectors with more models (MODELS=rrcf[,...], RUN_DIR=..., FORCE=1)
 	@if [ -z "$(MODELS)" ]; then echo "$(RED)✗ MODELS is required, e.g. make replay-models MODELS=rrcf$(NC)"; exit 1; fi
 	@if [ ! -f $(RUN_DIR)/inputs/vectors/vectors_sample.parquet ]; then echo "$(RED)✗ $(RUN_DIR)/inputs/vectors/vectors_sample.parquet not found (was that run recorded, and archived with archive-run?)$(NC)"; exit 1; fi

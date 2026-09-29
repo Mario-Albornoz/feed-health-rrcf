@@ -1,8 +1,4 @@
 #!/bin/bash
-# Test for `make archive-run`, on fake module directories in a scratch dir (nothing real is
-# read or written; the module, log and results directories are overridden on the command line).
-#
-#   ./test-run/test_archive_run.sh        (or: make test-archive-run)
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT" || exit 1
@@ -15,7 +11,7 @@ fail() { CHECKS=$((CHECKS + 1)); FAILURES=$((FAILURES + 1)); echo -e "  ${RED}âœ
 T=$(mktemp -d "${TMPDIR:-/tmp}/archive_run_test.XXXXXX")
 trap 'rm -rf "$T"' EXIT
 
-mk_run() {  # a complete fake run, with $1 as the scores content
+mk_run() {
     rm -rf "$T/sim" "$T/handler" "$T/det" "$T/logs"
     mkdir -p "$T/sim/data" "$T/sim/config" "$T/handler/data/eval" "$T/handler/config" "$T/det/data/vectors" "$T/det/config" "$T/logs"
     for f in anomaly_log.csv anomaly_log_episodes.csv anomaly_log_instruments.csv; do echo "$f" > "$T/sim/$f"; done
@@ -29,7 +25,7 @@ mk_run() {  # a complete fake run, with $1 as the scores content
     echo "log" > "$T/logs/handler.log"
 }
 
-arch() {  # make archive-run on the fake tree; extra make args in "$@"
+arch() {
     make archive-run SIMULATOR_DIR="$T/sim" HANDLER_DIR="$T/handler" DETECTOR_DIR="$T/det" \
         LOGS_DIR="$T/logs" RESULTS_DIR="$T/results" ARCHIVE_DIR="$T/results/thesis_x" "$@" > "$T/out.txt" 2>&1
 }
@@ -37,7 +33,7 @@ arch() {  # make archive-run on the fake tree; extra make args in "$@"
 REAL_PY="$PROJECT_ROOT/rrcf-detector/venv/bin/python3"
 CHECKER="$PROJECT_ROOT/rrcf-detector/scripts/check_vector_sample.py"
 
-gen_sample() {  # a genuine recording + summary, made by the real runner code: $1 vectors consumed
+gen_sample() {
     rm -rf "$T/det/data/vectors"; mkdir -p "$T/det/data/vectors"
     PYTHONPATH="$PROJECT_ROOT/rrcf-detector" "$REAL_PY" - "$T/det/data/vectors" "$1" > /dev/null 2>&1 <<'PYEOF'
 import sys

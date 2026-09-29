@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""
-Put the evaluation results of every model of one run side by side.
-
-Reads <run>/evaluation/<model>/evaluation_results.json (written by `make evaluate-thesis`,
-one directory per model) and prints one table with a column per model. Also writes
-<run>/evaluation/comparison.csv and comparison.md.
-
-    python3 scripts/compare_models.py                          # results/latest
-    python3 scripts/compare_models.py results/thesis_20260921_015547
-    python3 scripts/compare_models.py results/latest --models zscore,isoforest
-
-Standard library only. Values are recalls / rates in percent, with the 95% bootstrap CI
-in brackets where the evaluation computed one. Phase 3 (feed silence) and phase 4 validator
-rows are left out: those alerts come from the feed-handler, not from the scoring model.
-"""
 
 import argparse
 import csv
@@ -26,7 +11,6 @@ def load(path):
     with open(path) as f:
         d = json.load(f)
     name = d.get("method") or path.parent.name
-    # the model's block is keyed by its name; old files (before the key was made generic) use "rrcf"
     block = d.get(name) or d.get("rrcf")
     fa = d.get("false_alarms", {})
     far = fa.get(name) or fa.get("rrcf") or {}
@@ -38,7 +22,6 @@ def pct(x):
 
 
 def pct_ci(block, key="recall_scorable"):
-    """'12.3% [10.1, 14.5]' from a metrics dict holding <key> and <key>_ci95 (None if absent)."""
     if not block or block.get(key) is None:
         return "n/a"
     ci = block.get(key + "_ci95")
@@ -51,7 +34,6 @@ def num(x, fmt="{:.2f}"):
 
 
 def rows_for(name, d, block, far):
-    """Ordered (label, value) pairs for one model."""
     thr = d["operating_threshold"]
     by_thr = far.get("by_threshold", {})
     at_thr = by_thr.get(str(thr)) or by_thr.get(f"{thr:.1f}") or {}
@@ -118,7 +100,6 @@ def main(argv=None):
     models = list(loaded)
     table = {m: rows_for(m, *loaded[m]) for m in models}
     labels = [lab for lab, _ in table[models[0]]]
-    # models can differ in the families present (e.g. no stale episodes): align on the union of labels
     for m in models[1:]:
         for lab, _ in table[m]:
             if lab not in labels:

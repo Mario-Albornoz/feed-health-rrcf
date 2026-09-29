@@ -1,8 +1,4 @@
 #!/bin/bash
-#
-# Pre-Flight Test - Validate setup before running thesis pipeline
-# Tests all components independently before full run
-#
 
 set -e
 
@@ -24,7 +20,6 @@ echo -e "${BLUE}  Pipeline Pre-Flight Test${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Helper function
 run_test() {
     local test_name="$1"
     local test_command="$2"
@@ -42,7 +37,6 @@ run_test() {
     fi
 }
 
-# Test 1: Kafka is running
 echo -e "${YELLOW}[1/10] Checking Kafka...${NC}"
 if docker ps | grep thesis-kafka | grep -q "Up"; then
     echo -e "  ${GREEN}✓${NC} Kafka is running"
@@ -53,7 +47,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 2: No orphan processes
 echo -e "${YELLOW}[2/10] Checking for orphan processes...${NC}"
 ORPHANS=$(ps aux | grep -E "simulator|Python.*multi|aggregator" | grep -v grep | wc -l | tr -d ' ')
 if [ "$ORPHANS" -eq 0 ]; then
@@ -65,7 +58,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 3: Output files cleaned
 echo -e "${YELLOW}[3/10] Checking for leftover output files...${NC}"
 LEFTOVER=0
 [ -f "rrcf-detector/data/scores.parquet" ] && LEFTOVER=$((LEFTOVER + 1))
@@ -81,7 +73,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 4: Simulator binary exists
 echo -e "${YELLOW}[4/10] Checking simulator binary...${NC}"
 if [ -f "price-feed-simulator/bin/simulator" ]; then
     echo -e "  ${GREEN}✓${NC} Simulator binary exists"
@@ -92,7 +83,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 5: Handler binary exists
 echo -e "${YELLOW}[5/10] Checking handler binary...${NC}"
 if [ -f "feed-handler/aggregator" ]; then
     echo -e "  ${GREEN}✓${NC} Handler binary exists"
@@ -103,7 +93,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 6: Python venv exists
 echo -e "${YELLOW}[6/10] Checking Python virtual environment...${NC}"
 if [ -d "rrcf-detector/venv" ]; then
     echo -e "  ${GREEN}✓${NC} Python venv exists"
@@ -114,7 +103,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 7: Data files exist
 echo -e "${YELLOW}[7/10] Checking data files...${NC}"
 DATA_FILES=$(ls price-feed-simulator/data/*.csv 2>/dev/null | wc -l | tr -d ' ')
 if [ "$DATA_FILES" -gt 0 ]; then
@@ -126,12 +114,10 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 8: Anomaly config exists
 echo -e "${YELLOW}[8/10] Checking anomaly config...${NC}"
 if [ -f "price-feed-simulator/config/simulator-with-anomalies.yaml" ]; then
     echo -e "  ${GREEN}✓${NC} Anomaly config exists"
-    
-    # Check acceleration factor
+
     ACCEL=$(grep "acceleration_factor:" price-feed-simulator/config/simulator-with-anomalies.yaml | awk '{print $2}')
     echo -e "  ${BLUE}ℹ${NC}  Acceleration factor: $ACCEL"
 else
@@ -140,7 +126,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 9: Test simulator can start (5 second test)
 echo -e "${YELLOW}[9/10] Testing simulator startup (5 seconds)...${NC}"
 cd price-feed-simulator
 ./bin/simulator -config config/simulator-with-anomalies.yaml > /tmp/sim_test.log 2>&1 &
@@ -150,7 +135,6 @@ cd ..
 sleep 5
 
 if kill -0 $SIM_PID 2>/dev/null; then
-    # Check if it's actually processing
     if grep -q "Throughput:" /tmp/sim_test.log; then
         THROUGHPUT=$(grep "Throughput:" /tmp/sim_test.log | tail -1 | awk '{print $10}')
         if [ "$THROUGHPUT" != "0" ]; then
@@ -171,7 +155,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Test 10: Check system resources
 echo -e "${YELLOW}[10/10] Checking system resources...${NC}"
 LOAD=$(sysctl -n vm.loadavg | awk '{print $2}')
 NCPU=$(sysctl -n hw.ncpu)
@@ -193,7 +176,6 @@ else
 fi
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-# Summary
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 if [ "$FAILED_TESTS" -eq 0 ]; then

@@ -1,12 +1,10 @@
 #!/bin/bash
-# Check if Kafka still has messages that can be re-consumed by detector
 
 echo "============================================================"
 echo "Kafka Message Check"
 echo "============================================================"
 echo ""
 
-# Check if Kafka is running
 if ! docker ps | grep thesis-kafka | grep -q "Up"; then
     echo "✗ Kafka is not running"
     echo ""
@@ -17,7 +15,6 @@ fi
 echo "Checking Kafka consumer group status..."
 echo ""
 
-# Check multi-model consumer group
 docker exec -it thesis-kafka kafka-consumer-groups \
     --bootstrap-server localhost:9092 \
     --describe --group multi-model-group 2>/dev/null | grep -v "^$"

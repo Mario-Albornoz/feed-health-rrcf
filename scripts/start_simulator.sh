@@ -1,17 +1,13 @@
 #!/bin/bash
-# Start simulator with anomaly injection and save PID
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT/price-feed-simulator"
 
-# Start the simulator in background with anomaly config
 nohup ./bin/simulator -config config/simulator-with-anomalies.yaml > "$PROJECT_ROOT/logs/simulator.log" 2>&1 &
 PID=$!
 
-# Save PID
 echo $PID > "$PROJECT_ROOT/.pids/simulator.pid"
 
-# Verify it started
 sleep 1
 if kill -0 $PID 2>/dev/null; then
     echo $PID
