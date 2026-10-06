@@ -66,10 +66,10 @@ Wait for the message: `✓ Infrastructure ready`
 
 ### 3. Run the Pipeline
 
-Run all three components in the correct order:
+Run thesis evaluation
 
 ```bash
-make run-all
+make thesis-full
 ```
 
 This will:
@@ -77,7 +77,7 @@ This will:
 2. Wait 5 seconds for handler to initialize
 3. Start the detector pipeline (background):
    - Stream collector (saves Parquet files to `data/`)
-   - Multi-model runner (RRCF, Z-Score, Isolation Forest, Half-Space Trees, Online-iForest)
+   - Multi-model runner (RRCF, Z-Score, Isolation Forest, Half-Space Trees, Online-iForest) or whichever model is used
 4. Start the pipeline monitor
 5. Start the simulator (foreground)
 
@@ -85,8 +85,6 @@ The simulator will run in the foreground and show real-time statistics. Results 
 
 **Press `Ctrl+C`** to stop the simulator when done.
 
-> `make run-all` is the general-purpose run: it does not reset Kafka, wait for the pipeline to drain or
-> archive anything. For the thesis experiment use the workflow in **Thesis Evaluation** below
 > (`make run-thesis-experiment` / `make thesis-full`).
 
 ### 4. Stop Everything
@@ -120,18 +118,6 @@ make kafka-reset       # Delete and recreate the pipeline topics + consumer offs
 topics (4 partitions, 1 for `health-events`, 2 h retention, as in `docker-compose.yml`). `kafka-up`
 alone keeps whatever an earlier run left in the topics. `run-thesis-experiment` calls it for you.
 
-### Pipeline Execution
-
-```bash
-make run-all           # Run complete pipeline (recommended)
-make run-handler       # Run feed-handler only (background)
-make run-detector      # Run multi-model detector pipeline (background)
-make run-simulator     # Run simulator only (foreground)
-make drain             # Wait until the handler and detector processed everything (see below)
-make stop-all          # Stop all components (gracefully: waits for the detector and handler to exit)
-make status            # Show status of all components
-```
-
 `make stop-all` sends SIGTERM and then **waits** (up to 2 min for the detector, 1 min for the handler)
 before forcing a kill, because the detector has to close its parquet file (the footer is written on
 close; a killed file is unreadable) and the handler runs a final silence scan. Never stop a run with
@@ -161,25 +147,6 @@ cd price-feed-simulator
 ./bin/simulator -config config/simulator-with-anomalies.yaml
 ```
 
-### Monitoring
-
-```bash
-make logs              # Tail all pipeline logs
-make status            # Show component status
-
-# Or view individual logs:
-tail -f logs/handler.log
-tail -f logs/simulator.log
-tail -f logs/detector-collector.log  # Stream collector logs
-tail -f logs/detector-rrcf.log       # RRCF model logs
-tail -f logs/detector-zscore.log     # Z-Score model logs
-```
-
-**Note**: All components now log to files in the `logs/` directory for complete log capture.
-
-**Pipeline Monitor**: The `scripts/monitor_pipeline.sh` script automatically monitors pipeline health when using `make run-all`.
-
-**Results & Evaluation**: Detection results and evaluation data are saved to the `data/` directory in Parquet format for analysis.
 
 ### Testing
 
