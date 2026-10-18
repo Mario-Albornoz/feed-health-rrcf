@@ -4,7 +4,8 @@
         run-all stop-all status logs \
         test test-integration test-thesis test-simulator-completion test-stop-all test-stop-all-real test-archive-run clean-all \
         kafka-reset drain integration-test smoke-run describe-dataset \
-        run-thesis-experiment archive-run verify-run evaluate-thesis compare-models replay-models thesis-full
+        run-thesis-experiment archive-run verify-run evaluate-thesis compare-models replay-models thesis-full \
+        docker-build docker-shell
 
 .DEFAULT_GOAL := help
 
@@ -19,8 +20,14 @@ SIMULATOR_DIR := price-feed-simulator
 HANDLER_DIR := feed-handler
 DETECTOR_DIR := rrcf-detector
 
-SIMULATOR_BIN := $(SIMULATOR_DIR)/bin/simulator
-HANDLER_BIN := $(HANDLER_DIR)/aggregator
+# the runner container (docker/runner.Dockerfile) overrides these three through the environment
+SIMULATOR_BIN ?= $(PROJECT_ROOT)/$(SIMULATOR_DIR)/bin/simulator
+HANDLER_BIN ?= $(PROJECT_ROOT)/$(HANDLER_DIR)/aggregator
+PY ?= $(PROJECT_ROOT)/$(DETECTOR_DIR)/venv/bin/python3
+export SIMULATOR_BIN HANDLER_BIN PY
+
+# set inside the runner container: Kafka is reached directly instead of through docker
+IN_DOCKER := $(THESIS_IN_DOCKER)
 
 PIDS_DIR := $(PROJECT_ROOT)/.pids
 HANDLER_PID := $(PIDS_DIR)/handler.pid
@@ -30,14 +37,15 @@ pid_alive = [ "$$(cat $(1) 2>/dev/null)" -gt 0 ] 2>/dev/null && kill -0 "$$(cat 
 
 LOGS_DIR := $(PROJECT_ROOT)/logs
 
-PY := $(DETECTOR_DIR)/venv/bin/python3
 CHECK_SAMPLE := $(DETECTOR_DIR)/scripts/check_vector_sample.py
 RESULTS_DIR := results
 RUN_STAMP := $(shell date +%Y%m%d_%H%M%S)
 NEW_RUN_DIR := $(RESULTS_DIR)/thesis_$(RUN_STAMP)
 ARCHIVE_DIR ?= $(NEW_RUN_DIR)
 RUN_DIR ?= $(RESULTS_DIR)/latest
-KAFKA_EXEC := docker exec thesis-kafka
+KAFKA_EXEC := $(if $(IN_DOCKER),,docker exec thesis-kafka)
+# file size in bytes on Linux (GNU stat) and macOS (BSD stat)
+FSIZE := fsize() { stat -c %s "$$1" 2>/dev/null || stat -f %z "$$1"; }
 KAFKA_BS := localhost:9092
 HANDLER_GROUP := aggregator-group
 DETECTOR_GROUP := rrcf-detector-baselines-multi
@@ -66,9 +74,12 @@ help: ## Display this help message
 	@echo "  4. make stop-all     # Stop all services"
 	@echo "  5. make kafka-down   # Stop infrastructure"
 	@echo ""
-	@echo "$(GREEN)Thesis run (see README, section 'Running the thesis experiment'):$(NC)"
+	@echo "$(GREEN)Thesis run:$(NC)"
 	@echo "  make setup && make smoke-run     # once: build, then a few-minute check of the whole chain"
 	@echo "  make thesis-full                 # reset, run, drain, archive, verify, evaluate"
+	@echo ""
+	@echo "$(GREEN)Any OS through Docker (only docker and make needed):$(NC)"
+	@echo "  make docker-build && make docker-thesis-full   # any target: make docker-<target>"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(BLUE)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
@@ -90,22 +101,25 @@ setup: ## Install all dependencies and build binaries
 
 build-simulator: ## Build price-feed-simulator binary
 	@echo "$(YELLOW)Building price-feed-simulator...$(NC)"
-	@cd $(SIMULATOR_DIR) && go build -o bin/simulator cmd/simulator/main.go
+	@mkdir -p $(dir $(SIMULATOR_BIN))
+	@cd $(SIMULATOR_DIR) && go build -o $(SIMULATOR_BIN) ./cmd/simulator
 	@echo "$(GREEN)✓ Simulator built$(NC)"
 
 build-handler: ## Build feed-handler binary
 	@echo "$(YELLOW)Building feed-handler...$(NC)"
-	@cd $(HANDLER_DIR) && go build -o aggregator ./cmd/aggregator
+	@mkdir -p $(dir $(HANDLER_BIN))
+	@cd $(HANDLER_DIR) && go build -o $(HANDLER_BIN) ./cmd/aggregator
 	@echo "$(GREEN)✓ Handler built$(NC)"
 
 setup-detector: ## Setup rrcf-detector (Python venv + dependencies)
 	@echo "$(YELLOW)Setting up rrcf-detector...$(NC)"
-	@if ! command -v python3.12 > /dev/null 2>&1; then \
+	@if [ -n "$(IN_DOCKER)" ]; then echo "$(GREEN)✓ Dependencies are installed in the runner image ($(PY))$(NC)"; exit 0; fi; \
+	if ! command -v python3.12 > /dev/null 2>&1; then \
 		echo "$(RED)Error: Python 3.12 required but not found$(NC)"; \
 		echo "$(YELLOW)Install: brew install python@3.12$(NC)"; \
 		exit 1; \
-	fi
-	@cd $(DETECTOR_DIR) && \
+	fi; \
+	cd $(DETECTOR_DIR) && \
 		if [ ! -d "venv" ]; then \
 			echo "$(YELLOW)  Creating venv with Python 3.12...$(NC)"; \
 			python3.12 -m venv venv; \
@@ -121,6 +135,12 @@ setup-detector: ## Setup rrcf-detector (Python venv + dependencies)
 ##@ Infrastructure
 
 kafka-up: ## Start Kafka and Zookeeper via Docker Compose
+ifneq ($(IN_DOCKER),)
+	@for i in $$(seq 1 30); do kafka-broker-api-versions --bootstrap-server $(KAFKA_BS) > /dev/null 2>&1 && break; sleep 2; done; \
+	kafka-broker-api-versions --bootstrap-server $(KAFKA_BS) > /dev/null 2>&1 \
+		&& echo "$(GREEN)✓ Kafka reachable at $(KAFKA_BS) (started by docker compose on the host)$(NC)" \
+		|| { echo "$(RED)✗ Kafka not reachable at $(KAFKA_BS)$(NC)"; exit 1; }
+else
 	@echo "$(YELLOW)Starting infrastructure (Kafka + Zookeeper)...$(NC)"
 	@docker compose up -d
 	@echo "$(YELLOW)Waiting for services to be healthy...$(NC)"
@@ -128,15 +148,20 @@ kafka-up: ## Start Kafka and Zookeeper via Docker Compose
 	@echo "$(GREEN)✓ Infrastructure ready$(NC)"
 	@echo ""
 	@docker compose ps
+endif
 
 kafka-down: ## Stop and remove Kafka infrastructure
+ifneq ($(IN_DOCKER),)
+	@echo "$(YELLOW)Inside the runner container: stop Kafka from the host with 'make kafka-down'$(NC)"
+else
 	@echo "$(YELLOW)Stopping infrastructure...$(NC)"
 	@docker compose down -v
 	@echo "$(GREEN)✓ Infrastructure stopped$(NC)"
+endif
 
 kafka-reset: ## Delete and recreate the pipeline topics and consumer offsets (empty start)
 	@echo "$(YELLOW)Resetting Kafka topics and consumer groups...$(NC)"
-	@if ! docker ps --format '{{.Names}}' | grep -q '^thesis-kafka$$'; then echo "$(RED)✗ Kafka is not running: make kafka-up$(NC)"; exit 1; fi
+	@if [ -z "$(IN_DOCKER)" ] && ! docker ps --format '{{.Names}}' | grep -q '^thesis-kafka$$'; then echo "$(RED)✗ Kafka is not running: make kafka-up$(NC)"; exit 1; fi
 	@# 1. delete the topics and the consumers' committed offsets
 	@for t in raw-ticks normalized-vectors health-events anomaly-scores; do \
 		$(KAFKA_EXEC) kafka-topics --bootstrap-server $(KAFKA_BS) --delete --topic $$t --if-exists > /dev/null 2>&1; \
@@ -180,7 +205,7 @@ run-all: ## Run the complete pipeline (handler → detector → simulator) with 
 	@echo "$(YELLOW) Deleting log files"
 	@rm -f ./logs/*.log
 	@echo ""
-	@if ! docker compose ps | grep -q "thesis-kafka.*Up"; then \
+	@if [ -z "$(IN_DOCKER)" ] && ! docker compose ps | grep -q "thesis-kafka.*Up"; then \
 		echo "$(RED)✗ Kafka is not running. Please run 'make kafka-up' first.$(NC)"; \
 		exit 1; \
 	fi
@@ -247,7 +272,7 @@ run-simulator: ## Start price-feed-simulator (background with logs)
 	fi
 
 run-simulator-foreground: ## Start price-feed-simulator (foreground, no logging to file)
-	@cd $(SIMULATOR_DIR) && ./bin/simulator
+	@cd $(SIMULATOR_DIR) && $(SIMULATOR_BIN)
 
 stop-all: ## Stop all running pipeline components
 	@echo "$(YELLOW)Stopping pipeline components...$(NC)"
@@ -334,7 +359,7 @@ status: ## Show status of all pipeline components
 	fi
 	@echo ""
 	@echo "$(YELLOW)Infrastructure:$(NC)"
-	@docker compose ps
+	@if [ -n "$(IN_DOCKER)" ]; then echo "  (runner container: check with 'make kafka-status' on the host)"; else docker compose ps; fi
 
 logs: ## Tail all pipeline logs
 	@echo "$(BLUE)Tailing logs (Ctrl+C to stop)...$(NC)"
@@ -391,8 +416,8 @@ test-archive-run: ## Test archive-run on fake module directories in a scratch di
 
 clean: ## Clean build artifacts and logs
 	@echo "$(YELLOW)Cleaning build artifacts...$(NC)"
-	@rm -rf $(SIMULATOR_DIR)/bin/simulator
-	@rm -rf $(HANDLER_DIR)/aggregator
+	@rm -rf $(SIMULATOR_BIN)
+	@rm -rf $(HANDLER_BIN)
 	@rm -rf $(LOGS_DIR)/*
 	@rm -rf $(PIDS_DIR)
 	@echo "$(GREEN)✓ Build artifacts cleaned$(NC)"
@@ -463,7 +488,7 @@ run-thesis-experiment: ## Full run: reset, run, drain, stop, archive to results/
 	@echo ""
 	@echo "$(YELLOW)Running simulator with anomaly injection (foreground)...$(NC)"
 	@echo "  $(BLUE)Progress: tail -f logs/simulator.log$(NC)"
-	@cd $(SIMULATOR_DIR) && ./bin/simulator -config config/simulator-with-anomalies.yaml > $(LOGS_DIR)/simulator.log 2>&1 \
+	@cd $(SIMULATOR_DIR) && $(SIMULATOR_BIN) -config config/simulator-with-anomalies.yaml > $(LOGS_DIR)/simulator.log 2>&1 \
 		|| { echo "$(RED)✗ Simulator failed; last lines of logs/simulator.log:$(NC)"; tail -20 $(LOGS_DIR)/simulator.log; $(MAKE) stop-all > /dev/null 2>&1; exit 1; }
 	@echo "$(GREEN)✓ Simulator run complete$(NC)"
 	@echo ""
@@ -491,7 +516,7 @@ drain: ## Wait until the handler and detector have processed everything the simu
 	@# Run after the simulator has finished and BEFORE stop-all: stopping earlier throws away the
 	@# unprocessed tail. Three stages: handler has consumed raw-ticks; detector has consumed
 	@# normalized-vectors (and no new vectors appear); no scores file (any model) is still growing.
-	@T0=$$(date +%s); \
+	@T0=$$(date +%s); $(FSIZE); \
 	state() { $(KAFKA_EXEC) kafka-consumer-groups --bootstrap-server $(KAFKA_BS) --describe --group $$1 2>/dev/null \
 		| awk -v t=$$2 '$$2==t {n++; lag+=($$6=="-")?$$5:$$6; end+=$$5} END {if (n==0) print "-1 -1"; else print lag, end}'; }; \
 	late() { [ $$(( $$(date +%s) - T0 )) -lt $(DRAIN_TIMEOUT) ] || { echo "$(RED)✗ timed out after $(DRAIN_TIMEOUT)s$(NC)"; exit 1; }; }; \
@@ -515,7 +540,7 @@ drain: ## Wait until the handler and detector have processed everything the simu
 	echo "$(GREEN)  detector done$(NC); waiting for the scores file to settle..."; \
 	STABLE=0; PREV=-1; \
 	while [ $$STABLE -lt 3 ]; do \
-		late; SZ=$$(stat -f %z $(DETECTOR_DIR)/data/*.parquet 2>/dev/null | paste -sd+ - | bc); SZ=$${SZ:-0}; \
+		late; SZ=0; for f in $(DETECTOR_DIR)/data/*.parquet; do [ -f "$$f" ] && SZ=$$((SZ + $$(fsize "$$f"))); done; \
 		if [ "$$SZ" = "$$PREV" ]; then STABLE=$$((STABLE+1)); else STABLE=0; fi; \
 		PREV=$$SZ; sleep 10; \
 	done; \
@@ -524,10 +549,10 @@ drain: ## Wait until the handler and detector have processed everything the simu
 
 archive-run: ## Copy the last run's outputs, logs, configs and git revisions into ARCHIVE_DIR/inputs (default: new results/thesis_<stamp>)
 	@echo "$(YELLOW)Archiving the run to $(ARCHIVE_DIR)/inputs ...$(NC)"
-	@for f in $(DETECTOR_DIR)/data/*.parquet $(DETECTOR_DIR)/data/vectors/*.parquet; do \
+	@$(FSIZE); for f in $(DETECTOR_DIR)/data/*.parquet $(DETECTOR_DIR)/data/vectors/*.parquet; do \
 		[ -f "$$f" ] || continue; \
 		a=$(ARCHIVE_DIR)/inputs/$${f#$(DETECTOR_DIR)/data/}; \
-		if [ -f "$$a" ] && [ "$$(stat -f %z $$a)" != "$$(stat -f %z $$f)" ] && [ "$(FORCE)" != "1" ]; then \
+		if [ -f "$$a" ] && [ "$$(fsize $$a)" != "$$(fsize $$f)" ] && [ "$(FORCE)" != "1" ]; then \
 			echo "$(RED)✗ $$a already holds a different scores file (another run?). Not overwriting; pass FORCE=1 to override.$(NC)"; exit 1; \
 		fi; \
 	done
@@ -582,7 +607,7 @@ verify-run: ## PASS/WARN/FAIL report per model on an archived run (RUN_DIR=..., 
 		[ -f "$$s" ] || continue; N=$$((N+1)); \
 		m=$$(basename $$s .parquet); m=$${m#scores_}; \
 		echo "$(BLUE)── model: $$m ──$(NC)"; \
-		( cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/verify_run.py \
+		( cd $(DETECTOR_DIR) && $(PY) scripts/verify_run.py \
 			--manifest ../$(RUN_DIR)/inputs/injection_manifest.json \
 			--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
 			--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
@@ -608,7 +633,7 @@ evaluate-thesis: ## Evaluate every model of an archived run (RUN_DIR=..., MODEL=
 		[ -f "$$s" ] || continue; N=$$((N+1)); \
 		m=$$(basename $$s .parquet); m=$${m#scores_}; \
 		echo "$(BLUE)── evaluating model: $$m ──$(NC)"; \
-		( cd $(DETECTOR_DIR) && ./venv/bin/python3 scripts/evaluate_thesis.py \
+		( cd $(DETECTOR_DIR) && $(PY) scripts/evaluate_thesis.py \
 			--episodes ../$(RUN_DIR)/inputs/anomaly_log_episodes.csv \
 			--instruments ../$(RUN_DIR)/inputs/anomaly_log_instruments.csv \
 			--scores ../$$s --method-name $$m \
@@ -631,7 +656,7 @@ replay-models: ## Score an archived run's recorded vectors with more models (MOD
 	@if [ ! -f $(RUN_DIR)/inputs/vectors/vectors_sample.parquet ]; then echo "$(RED)✗ $(RUN_DIR)/inputs/vectors/vectors_sample.parquet not found (was that run recorded, and archived with archive-run?)$(NC)"; exit 1; fi
 	@echo "$(BLUE)Replaying $(RUN_DIR)/inputs/vectors/vectors_sample.parquet through: $(MODELS)$(NC)"
 	@CAF=""; command -v caffeinate > /dev/null 2>&1 && CAF="caffeinate -i"; \
-	cd $(DETECTOR_DIR) && PYTHONPATH=. $$CAF ./venv/bin/python3 -u scripts/run_multi_model.py --config config/baselines.yaml \
+	cd $(DETECTOR_DIR) && PYTHONPATH=. $$CAF $(PY) -u scripts/run_multi_model.py --config config/baselines.yaml \
 		--from-file ../$(RUN_DIR)/inputs/vectors/vectors_sample.parquet --models $(MODELS) \
 		--output ../$(RUN_DIR)/inputs/scores.parquet $(if $(filter 1,$(FORCE)),--overwrite)
 	@echo "$(GREEN)✓ Replay done: scores in $(RUN_DIR)/inputs/scores_<model>.parquet; next: make evaluate-thesis MODEL=<model>$(NC)"
@@ -641,3 +666,19 @@ thesis-full: run-thesis-experiment evaluate-thesis ## Complete workflow: run + v
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(GREEN)  Thesis Evaluation Complete!$(NC)"
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+
+##@ Docker (any OS: only docker and make are needed on the host)
+
+# variables given on the command line (make docker-evaluate-thesis MODEL=rrcf) are passed into the container
+DOCKER_VARS := RUN_DIR MODEL MODELS FORCE ARCHIVE_DIR SCORE_COLUMN TARGET_FAR FAR_GRID THRESHOLDS DRAIN_TIMEOUT
+DOCKER_PASS := $(foreach v,$(DOCKER_VARS),$(if $(filter command line,$(origin $(v))),$(v)='$($(v))'))
+DOCKER_RUN := THESIS_UID=$$(id -u) THESIS_GID=$$(id -g) docker compose --profile runner run --rm runner
+
+docker-build: ## Build the runner image (Go, Python 3.12 + detector deps, Kafka CLI)
+	@docker compose --profile runner build runner
+
+docker-shell: ## Shell inside the runner (Kafka is started if needed)
+	@$(DOCKER_RUN) bash
+
+docker-%: ## Run any target inside the runner, e.g. make docker-thesis-full, make docker-evaluate-thesis MODEL=rrcf
+	@$(DOCKER_RUN) make $* $(DOCKER_PASS)

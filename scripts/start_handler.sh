@@ -3,7 +3,7 @@
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT/feed-handler"
 
-nohup ./aggregator > "$PROJECT_ROOT/logs/handler.log" 2>&1 &
+nohup "${HANDLER_BIN:-./aggregator}" > "$PROJECT_ROOT/logs/handler.log" 2>&1 &
 PID=$!
 
 echo $PID > "$PROJECT_ROOT/.pids/handler.pid"

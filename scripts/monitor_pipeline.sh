@@ -5,6 +5,8 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LOG_FILE="$PROJECT_ROOT/logs/monitor.log"
 PIDS_DIR="$PROJECT_ROOT/.pids"
 CHECK_INTERVAL=10  # seconds
+# macOS uses top -l / sysctl / vm_stat / pmset / log show; Linux (the runner container) reads /proc
+IS_MAC=0; [ "$(uname -s)" = "Darwin" ] && IS_MAC=1
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -49,7 +51,12 @@ get_process_info() {
         local rss=$(ps -p "$pid" -o rss= 2>/dev/null | tr -d ' ')
         local vsz=$(ps -p "$pid" -o vsz= 2>/dev/null | tr -d ' ')
         local time=$(ps -p "$pid" -o time= 2>/dev/null | tr -d ' ')
-        local threads=$(ps -M -p "$pid" 2>/dev/null | wc -l | tr -d ' ')
+        local threads
+        if [ "$IS_MAC" = 1 ]; then
+            threads=$(ps -M -p "$pid" 2>/dev/null | wc -l | tr -d ' ')
+        else
+            threads=$(ps -o nlwp= -p "$pid" 2>/dev/null | tr -d ' ')
+        fi
 
         if [ -n "$cpu" ] && awk "BEGIN {exit !($cpu > 150)}"; then
             case "$name" in
@@ -98,8 +105,29 @@ get_process_info() {
     fi
 }
 
+check_system_resources_linux() {
+    local ncpu=$(nproc)
+    local load=$(awk '{print $1, $2, $3}' /proc/loadavg)
+    log "  Load Average: $load (${ncpu} cores available)"
+
+    local load_1min=$(echo "$load" | awk '{print $1}')
+    local load_threshold=$(awk "BEGIN {printf \"%.1f\", $ncpu * 0.8}")
+    if awk "BEGIN {exit !($load_1min > $load_threshold)}"; then
+        log_warn "  High CPU load detected: $load_1min (threshold: $load_threshold)"
+    fi
+
+    local mem_total=$(awk '/^MemTotal:/ {printf "%.1f", $2/1024/1024}' /proc/meminfo)
+    local mem_avail=$(awk '/^MemAvailable:/ {printf "%.1f", $2/1024/1024}' /proc/meminfo)
+    log "  Memory: ${mem_avail}GB available / ${mem_total}GB total"
+    echo "" >> "$LOG_FILE"
+}
+
 check_system_resources() {
     log "System Resources:"
+    if [ "$IS_MAC" != 1 ]; then
+        check_system_resources_linux
+        return
+    fi
 
     local cpu_user=$(top -l 1 -n 0 | grep "CPU usage" | awk '{print $3}' | tr -d '%')
     local cpu_sys=$(top -l 1 -n 0 | grep "CPU usage" | awk '{print $5}' | tr -d '%')
@@ -182,6 +210,12 @@ check_process_death() {
             if [ "$spike_count" -gt 0 ]; then
                 log_error "  CPU spikes detected: ${spike_count} consecutive high-CPU intervals"
             fi
+        fi
+
+        if [ "$IS_MAC" != 1 ]; then
+            log_error "  System load at death: $(awk '{print $1}' /proc/loadavg) ($(nproc) cores)"
+            log_error "  Check process-specific logs for more details"
+            return 1
         fi
 
         local kill_reason=$(log show --predicate "processID == $pid" --last 5m --info 2>/dev/null | grep -i "kill\|signal\|term\|exit" | tail -1)

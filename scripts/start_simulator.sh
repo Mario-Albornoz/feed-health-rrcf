@@ -3,7 +3,7 @@
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT/price-feed-simulator"
 
-nohup ./bin/simulator -config config/simulator-with-anomalies.yaml > "$PROJECT_ROOT/logs/simulator.log" 2>&1 &
+nohup "${SIMULATOR_BIN:-./bin/simulator}" -config config/simulator-with-anomalies.yaml > "$PROJECT_ROOT/logs/simulator.log" 2>&1 &
 PID=$!
 
 echo $PID > "$PROJECT_ROOT/.pids/simulator.pid"

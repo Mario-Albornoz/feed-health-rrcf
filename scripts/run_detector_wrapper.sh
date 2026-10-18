@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd "$(dirname "$0")/../rrcf-detector"
-PYTHONPATH=. exec venv/bin/python3 -u scripts/run_multi_model.py --config config/baselines.yaml --record ./data/vectors/vectors_sample.parquet
+PYTHONPATH=. exec "${PY:-venv/bin/python3}" -u scripts/run_multi_model.py --config config/baselines.yaml --record ./data/vectors/vectors_sample.parquet

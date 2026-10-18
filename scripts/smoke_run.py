@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SIM = ROOT / "price-feed-simulator"
 HANDLER = ROOT / "feed-handler"
 DETECTOR = ROOT / "rrcf-detector"
+# the runner container sets PY to its own interpreter; natively the detector venv is used
+DETECTOR_PY = os.environ.get("PY", str(DETECTOR / "venv/bin/python"))
 BROKER = "localhost:9092"
 
 
@@ -242,7 +244,7 @@ def check_sample_and_replay(work: Path, topics: dict, models: list) -> list:
     replay_dir = work / "replay"
     replay_dir.mkdir(exist_ok=True)
     r = subprocess.run(
-        [str(DETECTOR / "venv/bin/python"), "-u", "scripts/run_multi_model.py", "--config",
+        [DETECTOR_PY, "-u", "scripts/run_multi_model.py", "--config",
          str(work / "detector/baselines.yaml"), "--from-file", str(sample), "--models", ",".join(models),
          "--output", str(replay_dir / "scores.parquet")],
         cwd=DETECTOR, env=dict(os.environ, PYTHONPATH=str(DETECTOR)),
@@ -252,8 +254,18 @@ def check_sample_and_replay(work: Path, topics: dict, models: list) -> list:
 
     cols = ["exchange", "instrument", "timestamp_ms", "seq"]
     for m in models:
-        live = pq.read_table(work / f"detector/scores_{m}.parquet").to_pandas()
-        rep = pq.read_table(replay_dir / f"scores_{m}.parquet").to_pandas()
+        live_file, rep_file = work / f"detector/scores_{m}.parquet", replay_dir / f"scores_{m}.parquet"
+        if not live_file.exists() and not rep_file.exists():
+            # a model still in training scores nothing (zscore trains for training_days, longer than the slice)
+            log(f"  SKIP: {m}: neither the live run nor the replay wrote scores (still in training on this slice)")
+            continue
+        if not check(f"{m}: the live run and the replay both wrote scores",
+                     live_file.exists() and rep_file.exists(),
+                     f"live {'present' if live_file.exists() else 'missing'}, "
+                     f"replay {'present' if rep_file.exists() else 'missing'}"):
+            continue
+        live = pq.read_table(live_file).to_pandas()
+        rep = pq.read_table(rep_file).to_pandas()
         check(f"{m}: replay scores exactly the rows the live run scored",
               live[cols].reset_index(drop=True).equals(rep[cols].reset_index(drop=True)),
               f"live {len(live):,} rows, replay {len(rep):,} rows")
@@ -308,7 +320,7 @@ def main() -> int:
         log("starting the RRCF detector...")
         dlog = work / "logs" / "detector.log"
         env = dict(os.environ, PYTHONPATH=str(DETECTOR))
-        detector = subprocess.Popen([str(DETECTOR / "venv/bin/python"), "-u", "scripts/run_multi_model.py", "--config",
+        detector = subprocess.Popen([DETECTOR_PY, "-u", "scripts/run_multi_model.py", "--config",
                                      str(work / "detector/baselines.yaml"), "--output", str(work / "detector/scores.parquet"),
                                      "--record", str(work / "detector/vectors_sample.parquet")],
                                     cwd=DETECTOR, env=env, stdout=open(dlog, "w"), stderr=subprocess.STDOUT)

@@ -1,0 +1,3 @@
+# The runner image only needs the detector requirements; keep the 16 GB dataset and results out of the build context
+*
+!rrcf-detector/requirements.txt

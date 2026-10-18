@@ -72,6 +72,30 @@ services:
       "
     restart: "no"
 
+  # Toolbox that runs the root Makefile on Linux (make docker-<target> on the host).
+  # Only started on demand: `docker compose up` skips it because of the profile.
+  runner:
+    profiles: ["runner"]
+    build:
+      context: .
+      dockerfile: docker/runner.Dockerfile
+    image: thesis-runner
+    depends_on:
+      kafka:
+        condition: service_healthy
+    # share Kafka's network namespace so localhost:9092 (the address in every config) reaches the broker
+    network_mode: "service:kafka"
+    # reaps the pipeline's background processes, so stop-all does not wait on zombies
+    init: true
+    shm_size: "1gb"
+    user: "${THESIS_UID:-0}:${THESIS_GID:-0}"
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - thesis-bin:/opt/thesis/bin
+      - thesis-go:/opt/thesis/go
+      - thesis-gocache:/opt/thesis/gocache
+
 networks:
   thesis-net:
     driver: bridge
@@ -80,3 +104,9 @@ networks:
 volumes:
   kafka-data:
     name: thesis-kafka-data
+  thesis-bin:
+    name: thesis-runner-bin
+  thesis-go:
+    name: thesis-runner-go
+  thesis-gocache:
+    name: thesis-runner-gocache
